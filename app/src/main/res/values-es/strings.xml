@@ -113,6 +113,11 @@
 
     <!-- Ajustes principales de Termux. -->
     <string name="title_activity_termux_settings">Ajustes de Termux</string>
+    <string name="app_language_title">Idioma de la interfaz</string>
+    <string name="app_language_summary">Elige el idioma de esta aplicación. «Predeterminado del sistema» sigue el idioma del dispositivo.</string>
+    <string name="app_language_system">Predeterminado del sistema</string>
+    <string name="app_language_english">Inglés</string>
+    <string name="app_language_spanish">Español</string>
     <string name="termux_preferences_title">Termux</string>
     <string name="termux_preferences_summary">Preferencias de la aplicación Termux</string>
     <string name="termux_debugging_preferences_title">Depuración</string>

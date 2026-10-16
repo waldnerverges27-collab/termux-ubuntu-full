@@ -137,6 +137,21 @@
 
     <!-- Termux Settings -->
     <string name="title_activity_termux_settings">&TERMUX_APP_NAME; Settings</string>
+    <string name="app_language_title">Interface language</string>
+    <string name="app_language_summary">Choose the language for this app. System default follows your device.</string>
+    <string name="app_language_system">System default</string>
+    <string name="app_language_english">English</string>
+    <string name="app_language_spanish">Spanish</string>
+    <string-array name="app_language_entries">
+        <item>@string/app_language_system</item>
+        <item>@string/app_language_english</item>
+        <item>@string/app_language_spanish</item>
+    </string-array>
+    <string-array name="app_language_values">
+        <item></item>
+        <item>en</item>
+        <item>es</item>
+    </string-array>
 
     <!-- Termux App Preferences -->
     <string name="termux_preferences_title">&TERMUX_APP_NAME;</string>

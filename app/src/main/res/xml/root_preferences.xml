@@ -1,5 +1,13 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <ListPreference
+        app:key="app_language"
+        app:title="@string/app_language_title"
+        app:summary="@string/app_language_summary"
+        app:entries="@array/app_language_entries"
+        app:entryValues="@array/app_language_values"
+        app:defaultValue="" />
+
     <Preference
         app:key="termux"
         app:title="@string/termux_preferences_title"

@@ -3,9 +3,14 @@ package com.termux.app.activities;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 
@@ -25,6 +30,8 @@ import com.termux.shared.termux.TermuxConstants;
 import com.termux.shared.termux.TermuxUtils;
 import com.termux.shared.activity.media.AppCompatActivityUtils;
 import com.termux.shared.theme.NightMode;
+
+import java.util.Locale;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -59,6 +66,7 @@ public class SettingsActivity extends AppCompatActivity {
             if (context == null) return;
 
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
+            configureAppLanguagePreference();
 
             new Thread() {
                 @Override
@@ -71,6 +79,29 @@ public class SettingsActivity extends AppCompatActivity {
                     configureDonatePreference(context);
                 }
             }.start();
+        }
+
+        private void configureAppLanguagePreference() {
+            ListPreference languagePreference = findPreference("app_language");
+            if (languagePreference == null) return;
+
+            String currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags();
+            String selectedLanguage = "";
+            if (currentLocales != null && !currentLocales.isEmpty()) {
+                String firstTag = currentLocales.split(",")[0].trim();
+                String languageCode = Locale.forLanguageTag(firstTag).getLanguage();
+                if ("en".equals(languageCode) || "es".equals(languageCode)) {
+                    selectedLanguage = languageCode;
+                }
+            }
+            languagePreference.setValue(selectedLanguage);
+            languagePreference.setOnPreferenceChangeListener((preference, newValue) -> {
+                if (!(newValue instanceof String)) return false;
+                String languageTag = (String) newValue;
+                new Handler(Looper.getMainLooper()).post(() ->
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag)));
+                return true;
+            });
         }
 
         private void configureTermuxAPIPreference(@NonNull Context context) {

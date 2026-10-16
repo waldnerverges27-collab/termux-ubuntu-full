@@ -38,8 +38,12 @@ aplicarle una segunda compresión. El APK resultante sí incluye el archivo.
   ocultos (nombres que empiezan por punto). Es de solo lectura: se puede copiar
   una ruta o insertarla en la terminal; nunca ejecuta automáticamente un comando
   seleccionado.
-- Los controles y mensajes añadidos por este fork tienen traducción al español
-  cuando el idioma del dispositivo está configurado en español.
+- En Ajustes, «Idioma de la interfaz» permite elegir Predeterminado del sistema,
+  Inglés o Español sin cambiar el idioma global del dispositivo. Android recrea
+  las pantallas abiertas para aplicar el cambio; Android 13 y versiones
+  posteriores también pueden mostrar los idiomas admitidos en los ajustes del
+  sistema. Las traducciones españolas cubren los controles y mensajes añadidos
+  por este fork; algunos textos heredados de Termux siguen en inglés.
 - El selector de paletas cambia los acentos de la interfaz y las extra keys
   (Midnight, Ocean, Violet, Forest, Amber y Rose). Los colores del output de
   la terminal siguen bajo el control de Termux/Termux:Styling.
