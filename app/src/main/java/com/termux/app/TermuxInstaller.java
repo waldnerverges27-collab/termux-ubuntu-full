@@ -107,7 +107,8 @@ final class TermuxInstaller {
             if (TermuxFileUtils.isTermuxPrefixDirectoryEmpty()) {
                 Logger.logInfo(LOG_TAG, "The termux prefix directory \"" + TERMUX_PREFIX_DIR_PATH + "\" exists but is empty or only contains specific unimportant files.");
             } else {
-                whenDone.run();
+                // The Termux prefix already exists, but Ubuntu may still need to be installed or upgraded.
+                UbuntuRootfsInstaller.installIfNeeded(activity, whenDone);
                 return;
             }
         } else if (FileUtils.fileExists(TERMUX_PREFIX_DIR_PATH, false)) {
@@ -221,8 +222,8 @@ final class TermuxInstaller {
                     // Recreate env file since termux prefix was wiped earlier
                     TermuxShellEnvironment.writeEnvironmentToFile(activity);
 
-                    // Install bundled Ubuntu rootfs (proot) for auto-boot
-                    UbuntuRootfsInstaller.installIfNeeded(activity, whenDone);
+                    // Install bundled Ubuntu rootfs on the UI thread so its progress dialog is safe.
+                    activity.runOnUiThread(() -> UbuntuRootfsInstaller.installIfNeeded(activity, whenDone));
 
                 } catch (final Exception e) {
                     showBootstrapErrorDialog(activity, whenDone, Logger.getStackTracesMarkdownString(null, Logger.getStackTracesStringArray(e)));

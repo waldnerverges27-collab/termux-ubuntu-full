@@ -21,6 +21,11 @@ android {
     def apkVersionTag = System.getenv("TERMUX_APK_VERSION_TAG") ?: ""
     def splitAPKsForDebugBuilds = System.getenv("TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS") ?: "1"
     def splitAPKsForReleaseBuilds = System.getenv("TERMUX_SPLIT_APKS_FOR_RELEASE_BUILDS") ?: "0" // F-Droid does not support split APKs #1904
+    def termuxAbis = (System.getenv("TERMUX_ABIS") ?: "arm64-v8a")
+        .split(",").collect { it.trim() }.findAll { !it.isEmpty() }
+    if (termuxAbis != ["arm64-v8a"]) {
+        throw new GradleException("This Ubuntu rootfs build only supports TERMUX_ABIS=arm64-v8a.")
+    }
 
     dependencies {
         implementation "androidx.annotation:annotation:1.9.0"
@@ -71,7 +76,7 @@ android {
                 enable ((gradle.startParameter.taskNames.any { it.contains("Debug") } && splitAPKsForDebugBuilds == "1") ||
                     (gradle.startParameter.taskNames.any { it.contains("Release") } && splitAPKsForReleaseBuilds == "1"))
                 reset ()
-                include 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+                termuxAbis.each { abi -> include abi }
                 universalApk true
             }
         }
@@ -142,6 +147,12 @@ android {
 
     buildFeatures {
         buildConfig true
+    }
+
+    // The bundled rootfs is already xz-compressed. Store it as-is in the APK
+    // rather than applying a second zip compression pass.
+    androidResources {
+        noCompress += ['xz']
     }
 }
 

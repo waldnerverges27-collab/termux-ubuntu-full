@@ -418,7 +418,11 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                         if (intent != null && intent.getExtras() != null) {
                             launchFailsafe = intent.getExtras().getBoolean(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
                         }
-                        mTermuxTerminalSessionActivityClient.addNewSession(launchFailsafe, null);
+                        if (!mIsActivityRecreated && intent != null && Intent.ACTION_RUN.equals(intent.getAction())) {
+                            mTermuxTerminalSessionActivityClient.addNewSession(launchFailsafe, null);
+                        } else {
+                            startDefaultSession(launchFailsafe);
+                        }
                     } catch (WindowManager.BadTokenException e) {
                         // Activity finished - ignore.
                     }
@@ -428,20 +432,65 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                 finishActivityIfNotFinishing();
             }
         } else {
-            // If termux was started from launcher "New session" shortcut and activity is recreated,
-            // then the original intent will be re-delivered, resulting in a new session being re-added
-            // each time.
+            // If Termux was started from the launcher "New session" shortcut and the activity is
+            // recreated, the original intent must not create a duplicate session.
             if (!mIsActivityRecreated && intent != null && Intent.ACTION_RUN.equals(intent.getAction())) {
-                // Android 7.1 app shortcut from res/xml/shortcuts.xml.
                 boolean isFailSafe = intent.getBooleanExtra(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
                 mTermuxTerminalSessionActivityClient.addNewSession(isFailSafe, null);
             } else {
-                mTermuxTerminalSessionActivityClient.setCurrentSession(mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast());
+                boolean launchFailsafe = intent != null
+                    && intent.getBooleanExtra(TERMUX_ACTIVITY.EXTRA_FAILSAFE_SESSION, false);
+                boolean launcherStart = intent == null || Intent.ACTION_MAIN.equals(intent.getAction());
+                if (!mIsActivityRecreated && launcherStart && !launchFailsafe
+                    && UbuntuRootfsInstaller.isReady()) {
+                    TerminalSession ubuntuSession = findUbuntuSession();
+                    if (ubuntuSession != null) {
+                        mTermuxTerminalSessionActivityClient.setCurrentSession(ubuntuSession);
+                    } else {
+                        startDefaultSession(false);
+                    }
+                } else {
+                    mTermuxTerminalSessionActivityClient.setCurrentSession(
+                        mTermuxTerminalSessionActivityClient.getCurrentStoredSessionOrLast());
+                }
             }
         }
 
         // Update the {@link TerminalSession} and {@link TerminalEmulator} clients.
         mTermuxService.setTermuxTerminalSessionClient(mTermuxTerminalSessionActivityClient);
+    }
+
+    /** Start the bundled Ubuntu login by default, while preserving the Termux failsafe shell. */
+    private void startDefaultSession(boolean launchFailsafe) {
+        if (mTermuxService == null || mTermuxTerminalSessionActivityClient == null) return;
+
+        if (!launchFailsafe && UbuntuRootfsInstaller.isReady()) {
+            String loginPath = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login";
+            TermuxSession ubuntuSession = mTermuxService.createTermuxSession(
+                loginPath, null, null, mProperties.getDefaultWorkingDirectory(), false, "Ubuntu");
+            if (ubuntuSession != null) {
+                mTermuxTerminalSessionActivityClient.setCurrentSession(ubuntuSession.getTerminalSession());
+                return;
+            }
+            Logger.logError(LOG_TAG, "Could not start the bundled Ubuntu login; falling back to Termux shell.");
+        }
+
+        mTermuxTerminalSessionActivityClient.addNewSession(launchFailsafe, null);
+    }
+
+    /** Return a running session that was started through the bundled Ubuntu login command. */
+    @Nullable
+    private TerminalSession findUbuntuSession() {
+        if (mTermuxService == null) return null;
+        String loginPath = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login";
+        for (int index = 0; index < mTermuxService.getTermuxSessionsSize(); index++) {
+            TermuxSession termuxSession = mTermuxService.getTermuxSession(index);
+            if (termuxSession != null && termuxSession.getExecutionCommand() != null
+                && loginPath.equals(termuxSession.getExecutionCommand().executable)) {
+                return termuxSession.getTerminalSession();
+            }
+        }
+        return null;
     }
 
     @Override

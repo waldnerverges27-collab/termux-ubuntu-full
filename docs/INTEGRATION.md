@@ -2,14 +2,19 @@
 
 ## Integración del entorno Linux
 
-El fork instala el rootfs de Ubuntu incluido en el APK y configura el login de
-Termux para iniciar Ubuntu con `proot`. El rootfs se instala bajo
-`$PREFIX/var/lib/proot-distro/installed-rootfs/ubuntu`; el acceso se puede
-cambiar desde la sesión terminal como de costumbre.
+El fork instala el rootfs ARM64 de Ubuntu incluido en el APK y abre una sesión
+Ubuntu automáticamente al iniciar Termux. El rootfs queda bajo
+`$PREFIX/var/lib/proot-distro/installed-rootfs/ubuntu`; el comando
+`$PREFIX/bin/login` lo inicia con PRoot en modo fake-root (`-0`) y un entorno
+guest limpio (`env -i`, `HOME=/root` y un `PATH` de Ubuntu). El script limpia
+`LD_PRELOAD` antes de arrancar PRoot. El shell de recuperación de Termux sigue
+disponible desde la sesión failsafe.
 
-El archivo `ubuntu-rootfs.tar.xz` es demasiado grande para Git. Para compilar,
-cópialo a `app/src/main/assets/ubuntu-rootfs.tar.xz` desde el asset de la
-release correspondiente. El APK generado incluye este archivo.
+El archivo `ubuntu-rootfs.tar.xz` es grande y está excluido de Git a propósito.
+Los scripts en `rootfs/` construyen Ubuntu 26.04 ARM64 en `/opt`, validan el
+marcador y empaquetan el rootfs. Tras generarlo, colócalo en
+`app/src/main/assets/ubuntu-rootfs.tar.xz` para compilar; Gradle lo almacena sin
+aplicarle una segunda compresión. El APK resultante sí incluye el archivo.
 
 ## Controles del terminal
 
@@ -41,12 +46,28 @@ Así el notch, la barra gestual y el teclado no deben cubrir la fila de atajos.
 
 ## Compilación de la variante arm64
 
-1. Instala el entorno Android/NDK requerido por Gradle.
-2. Copia el rootfs anterior a `app/src/main/assets/ubuntu-rootfs.tar.xz`.
-3. Compila el APK debug arm64 con `:app:assembleDebug` y el filtro ABI
-   `arm64-v8a` si se quiere evitar generar las demás variantes.
+1. Para recuperar el entorno completo, ejecuta `bash scripts/setup_android_env.sh`;
+   Android SDK, cachés, rootfs y artefactos grandes quedan bajo `/opt`. Si el
+   checkout privado debe restaurarse, el script acepta `GITHUB_TOKEN` desde el
+   entorno (permiso de lectura/escritura en el repo) y nunca lo guarda en disco.
+   También puedes preparar manualmente el host Android/NDK y las dependencias
+   `debootstrap`, `qemu-user-static` y `binfmt-support`.
+2. Genera el archivo de Ubuntu ARM64 con `bash rootfs/build-rootfs.sh`. Si una
+   construcción se interrumpe, continúa con `bash rootfs/resume-rootfs.sh`; el
+   empaquetador valida `dpkg --audit`, `dpkg --print-architecture` y el
+   marcador antes de retirar el árbol expandido.
+3. En este entorno de compilación, enlaza o copia
+   `/opt/ubuntu-rootfs.tar.xz` a
+   `app/src/main/assets/ubuntu-rootfs.tar.xz`. El archivo se ignora en Git por
+   su tamaño; no se debe añadir el APK ni el rootfs comprimido a un commit.
+4. Construye el APK ARM64 universal con
+   `TERMUX_ABIS=arm64-v8a TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS=0 ./gradlew --no-daemon :app:assembleDebug`.
+   El build rechaza otras ABI porque el rootfs y PRoot incluidos son ARM64.
 
-El APK debug se firma con la clave de desarrollo de Gradle y no es una firma de
-publicación. No se probó en un dispositivo físico; antes de distribuirlo, hay
-que instalarlo en un teléfono y validar insets, teclado, extra keys y sesión
-Ubuntu.
+El rootfs incluye herramientas de desarrollo instaladas desde el archivo actual
+de Ubuntu y versiones estables actuales de Node.js LTS, Go, Gradle y Rust; el
+marcador `/etc/termux-ubuntu-rootfs` registra las versiones seleccionadas. La
+extracción inicial necesita varios GB de almacenamiento libre. El APK debug se
+firma con la clave de desarrollo del proyecto, no con una clave de publicación.
+Antes de distribuirlo, instala y valida el APK en un dispositivo arm64 real,
+incluidos teclado, insets, extra keys y login de Ubuntu.
