@@ -221,7 +221,8 @@ final class TermuxInstaller {
                     // Recreate env file since termux prefix was wiped earlier
                     TermuxShellEnvironment.writeEnvironmentToFile(activity);
 
-                    activity.runOnUiThread(whenDone);
+                    // Install bundled Ubuntu rootfs (proot) for auto-boot
+                    UbuntuRootfsInstaller.installIfNeeded(activity, whenDone);
 
                 } catch (final Exception e) {
                     showBootstrapErrorDialog(activity, whenDone, Logger.getStackTracesMarkdownString(null, Logger.getStackTracesStringArray(e)));
