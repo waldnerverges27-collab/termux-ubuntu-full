@@ -51,7 +51,8 @@ sudo env XZ_OPT='-1 -T0' tar --numeric-owner --xattrs --acls \
   -cJf "$TARBALL.tmp" -C /opt ubuntu-rootfs
 sudo mv -f "$TARBALL.tmp" "$TARBALL"
 sudo chown "$(id -un):$(id -gn)" "$TARBALL"
-sha256sum "$TARBALL" | awk '{print $1}' > "$TARBALL.sha256"
+sha256sum "$TARBALL" | awk '{print $1}' | sudo tee "$TARBALL.sha256" >/dev/null
+sudo chown "$(id -un):$(id -gn)" "$TARBALL.sha256"
 
 ARCHIVE_MARKER="$(tar -xJOf "$TARBALL" ubuntu-rootfs/etc/termux-ubuntu-rootfs)"
 if ! grep -Fxq 'ARCH=arm64' <<< "$ARCHIVE_MARKER"; then

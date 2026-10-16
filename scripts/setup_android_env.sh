@@ -18,8 +18,8 @@ REPOSITORY_URL=https://github.com/waldnerverges27-collab/termux-ubuntu-full.git
 
 log() { printf '[setup] %s\n' "$*"; }
 
-sudo mkdir -p "$TMP_DIR" "$GRADLE_DIR" "$GRADLE_CACHE" "$ANDROID_USER_HOME"
-sudo chown -R "$USER:$USER" "$TMP_DIR" "$GRADLE_DIR" "$GRADLE_CACHE" "$ANDROID_USER_HOME"
+sudo mkdir -p "$TMP_DIR" "$GRADLE_DIR" "$GRADLE_CACHE" "$ANDROID_USER_HOME" "$ANDROID_SDK"
+sudo chown -R "$USER:$USER" "$TMP_DIR" "$GRADLE_DIR" "$GRADLE_CACHE" "$ANDROID_USER_HOME" "$ANDROID_SDK"
 export TMPDIR="$TMP_DIR"
 export JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$TMP_DIR"
 
@@ -128,7 +128,9 @@ print(version, url)
 PY
 )"
 cmdline_revision() {
-  sed -n 's/^Pkg.Revision=//p' "$1/source.properties" 2>/dev/null | head -1
+  local properties="$1/source.properties"
+  [ -r "$properties" ] || return 0
+  sed -n 's/^Pkg.Revision=//p' "$properties" | head -1 || true
 }
 CURRENT_CMDLINE_VERSION="$(cmdline_revision "$ANDROID_SDK/cmdline-tools/latest")"
 if [ "$CURRENT_CMDLINE_VERSION" != "$CMDLINE_TOOLS_VERSION" ]; then

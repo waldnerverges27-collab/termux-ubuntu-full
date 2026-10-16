@@ -112,6 +112,17 @@ GRADLE_VERSION_INSTALLED="$(/opt/gradle/current/bin/gradle --version | awk '/^Gr
 RUST_VERSION_INSTALLED="$(/opt/cargo/bin/rustc --version | awk '{print $2}')"
 JAVA_VERSION_INSTALLED="$(java -version 2>&1 | sed -n '1s/.*version "\([^"]*\)".*/\1/p')"
 UBUNTU_CODENAME="$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")"
+if [[ "$POLICY_CREATED" -eq 1 ]]; then rm -f /usr/sbin/policy-rc.d; fi
+apt-get clean
+rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
+rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/* /var/log/* /var/crash/*
+find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en*' -exec rm -rf {} + 2>/dev/null || true
+
+AUDIT="$(dpkg --audit || true)"
+if [[ -n "$AUDIT" ]]; then
+  printf 'dpkg audit found incomplete package configuration:\n%s\n' "$AUDIT" >&2
+  exit 1
+fi
 {
   echo 'FORMAT=1'
   echo 'DISTRIBUTION=Ubuntu'
@@ -124,18 +135,6 @@ UBUNTU_CODENAME="$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")"
   echo "RUST_VERSION=${RUST_VERSION_INSTALLED}"
   echo "JAVA_VERSION=${JAVA_VERSION_INSTALLED}"
 } > /etc/termux-ubuntu-rootfs
-
-if [[ "$POLICY_CREATED" -eq 1 ]]; then rm -f /usr/sbin/policy-rc.d; fi
-apt-get clean
-rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
-rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/* /var/log/* /var/crash/*
-find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en*' -exec rm -rf {} + 2>/dev/null || true
-
-AUDIT="$(dpkg --audit || true)"
-if [[ -n "$AUDIT" ]]; then
-  printf 'dpkg audit found incomplete package configuration:\n%s\n' "$AUDIT" >&2
-  exit 1
-fi
 printf 'Configured Ubuntu %s ARM64: Node %s, Go %s, Gradle %s, Rust %s, Java %s\n' \
   "$UBUNTU_CODENAME" "$NODE_VERSION_INSTALLED" "$GO_VERSION_INSTALLED" \
   "$GRADLE_VERSION_INSTALLED" "$RUST_VERSION_INSTALLED" "$JAVA_VERSION_INSTALLED"
