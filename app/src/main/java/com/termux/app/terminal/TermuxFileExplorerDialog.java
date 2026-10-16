@@ -48,9 +48,15 @@ public final class TermuxFileExplorerDialog {
     private static final class Browser {
         private final TermuxActivity activity;
         private final Dialog dialog;
-        private final File rootDirectory;
+        private static final int LOCATION_CURRENT_ENVIRONMENT = 0;
+        private static final int LOCATION_SHARED_STORAGE = 1;
+
+        private final File ubuntuRootDirectory;
+        private final File termuxHomeDirectory;
+        private final File sharedStorageDirectory;
+        private File rootDirectory;
         private final boolean ubuntuMode;
-        private final File initialDirectory;
+        private boolean sharedStorageMode;
         private final FileListAdapter adapter;
         private File currentDirectory;
         private TextView locationView;
@@ -64,18 +70,20 @@ public final class TermuxFileExplorerDialog {
 
         Browser(TermuxActivity activity) {
             this.activity = activity;
-            File ubuntuRoot = new File(TermuxConstants.TERMUX_PREFIX_DIR_PATH,
+            ubuntuRootDirectory = new File(TermuxConstants.TERMUX_PREFIX_DIR_PATH,
                 "var/lib/proot-distro/installed-rootfs/ubuntu");
+            termuxHomeDirectory = TermuxConstants.TERMUX_HOME_DIR;
+            sharedStorageDirectory = new File(termuxHomeDirectory, "storage/shared");
             TerminalSession session = activity.getCurrentSession();
             String currentWorkingDirectory = session == null ? null : session.getCwd();
-            String ubuntuRootPath = ubuntuRoot.getAbsolutePath();
+            String ubuntuRootPath = ubuntuRootDirectory.getAbsolutePath();
             boolean inTermuxFiles = currentWorkingDirectory != null &&
                 currentWorkingDirectory.startsWith(TermuxConstants.TERMUX_FILES_DIR_PATH) &&
                 !currentWorkingDirectory.startsWith(ubuntuRootPath);
-            ubuntuMode = ubuntuRoot.isDirectory() && !inTermuxFiles;
-            rootDirectory = ubuntuMode ? ubuntuRoot : TermuxConstants.TERMUX_HOME_DIR;
-            initialDirectory = findSessionDirectory(rootDirectory, ubuntuMode);
-            currentDirectory = initialDirectory;
+            ubuntuMode = ubuntuRootDirectory.isDirectory() && !inTermuxFiles;
+            sharedStorageMode = false;
+            rootDirectory = ubuntuMode ? ubuntuRootDirectory : termuxHomeDirectory;
+            currentDirectory = findSessionDirectory(rootDirectory, ubuntuMode);
             adapter = new FileListAdapter(activity);
             dialog = new Dialog(activity, R.style.Theme_TermuxPremiumDialog);
         }
@@ -121,6 +129,7 @@ public final class TermuxFileExplorerDialog {
             });
 
             content.findViewById(R.id.file_explorer_close).setOnClickListener(v -> dialog.dismiss());
+            content.findViewById(R.id.file_explorer_change_location).setOnClickListener(v -> showLocationPicker());
             content.findViewById(R.id.file_explorer_home).setOnClickListener(v -> {
                 currentDirectory = rootDirectory;
                 clearSearch();
@@ -149,6 +158,64 @@ public final class TermuxFileExplorerDialog {
                 window.setLayout(Math.min(dp(560), width - margin * 2), Math.min(dp(620), Math.round(height * 0.82f)));
             }
             refresh();
+        }
+
+        private void showLocationPicker() {
+            List<Integer> locations = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            locations.add(LOCATION_CURRENT_ENVIRONMENT);
+            labels.add(getString(ubuntuMode ? R.string.premium_file_explorer_ubuntu
+                : R.string.premium_file_explorer_termux));
+            locations.add(LOCATION_SHARED_STORAGE);
+            labels.add(getString(R.string.premium_file_explorer_shared_storage));
+
+            new AlertDialog.Builder(activity, R.style.Theme_TermuxPremiumDialog)
+                .setTitle(R.string.premium_file_explorer_choose_location)
+                .setItems(labels.toArray(new String[0]), (picker, which) -> {
+                    if (which < 0 || which >= locations.size()) return;
+                    if (locations.get(which) == LOCATION_SHARED_STORAGE) {
+                        if (!isSharedStorageAvailable()) {
+                            showStoragePermissionPrompt();
+                            return;
+                        }
+                        activateLocation(true);
+                    } else {
+                        activateLocation(false);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+        }
+
+        private void activateLocation(boolean sharedStorage) {
+            sharedStorageMode = sharedStorage;
+            rootDirectory = sharedStorageMode ? sharedStorageDirectory
+                : (ubuntuMode ? ubuntuRootDirectory : termuxHomeDirectory);
+            currentDirectory = rootDirectory;
+            clearSearch();
+            refresh();
+            if (sharedStorageMode && ubuntuMode) toast(R.string.premium_shared_storage_ubuntu_notice);
+        }
+
+        private boolean isSharedStorageAvailable() {
+            try {
+                return sharedStorageDirectory.isDirectory() && sharedStorageDirectory.canRead()
+                    && sharedStorageDirectory.list() != null;
+            } catch (SecurityException e) {
+                return false;
+            }
+        }
+
+        private void showStoragePermissionPrompt() {
+            new AlertDialog.Builder(activity, R.style.Theme_TermuxPremiumDialog)
+                .setTitle(R.string.premium_storage_permission_title)
+                .setMessage(R.string.premium_storage_permission_message)
+                .setPositiveButton(R.string.premium_storage_permission_grant, (prompt, which) -> {
+                    activity.requestStoragePermission(false);
+                    toast(R.string.premium_storage_permission_pending);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
         }
 
         private File findSessionDirectory(File root, boolean ubuntuRoot) {
@@ -198,8 +265,9 @@ public final class TermuxFileExplorerDialog {
             if (currentDirectory == null || !currentDirectory.isDirectory() || !isInsideRoot(currentDirectory, rootDirectory)) {
                 currentDirectory = rootDirectory;
             }
-            locationView.setText((ubuntuMode ? getString(R.string.premium_file_explorer_ubuntu) :
-                getString(R.string.premium_file_explorer_termux)) + "  ·  " + displayPath(currentDirectory));
+            int locationLabel = sharedStorageMode ? R.string.premium_file_explorer_shared_storage
+                : (ubuntuMode ? R.string.premium_file_explorer_ubuntu : R.string.premium_file_explorer_termux);
+            locationView.setText(getString(locationLabel) + "  ·  " + displayPath(currentDirectory));
 
             File[] entries;
             try {
@@ -309,6 +377,11 @@ public final class TermuxFileExplorerDialog {
             String filePath = file.getAbsolutePath();
             String relative = filePath.length() > rootPath.length() ? filePath.substring(rootPath.length()) : "";
             relative = relative.replace(File.separatorChar, '/');
+            if (sharedStorageMode) {
+                if (ubuntuMode) return relative.isEmpty() ? "/mnt/shared" : "/mnt/shared" + relative;
+                return relative.isEmpty() ? sharedStorageDirectory.getAbsolutePath()
+                    : sharedStorageDirectory.getAbsolutePath() + relative;
+            }
             if (ubuntuMode) {
                 if (relative.isEmpty()) return "/";
                 return relative.startsWith("/") ? relative : "/" + relative;
@@ -322,6 +395,7 @@ public final class TermuxFileExplorerDialog {
             String path = directory.getAbsolutePath();
             String relative = path.length() > rootPath.length() ? path.substring(rootPath.length()) : "";
             relative = relative.replace(File.separatorChar, '/');
+            if (sharedStorageMode) return relative.isEmpty() ? "/" : (relative.startsWith("/") ? relative : "/" + relative);
             if (ubuntuMode) return relative.isEmpty() ? "/" : (relative.startsWith("/") ? relative : "/" + relative);
             return relative.isEmpty() ? "~" : "~/" + relative.replaceFirst("^/", "");
         }

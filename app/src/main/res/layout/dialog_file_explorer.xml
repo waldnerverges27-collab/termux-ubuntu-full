@@ -35,17 +35,40 @@
             android:textSize="24sp" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/file_explorer_location"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:ellipsize="middle"
-        android:maxLines="1"
-        android:paddingTop="4dp"
-        android:paddingBottom="8dp"
-        android:textColor="@color/premium_accent_cyan"
-        android:textSize="11sp"
-        android:typeface="monospace" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/file_explorer_location"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="middle"
+            android:maxLines="1"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp"
+            android:textColor="@color/premium_accent_cyan"
+            android:textSize="11sp"
+            android:typeface="monospace" />
+
+        <TextView
+            android:id="@+id/file_explorer_change_location"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/premium_icon_button_background"
+            android:clickable="true"
+            android:contentDescription="@string/premium_file_explorer_change_location"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/premium_file_explorer_change_location"
+            android:textColor="@color/premium_text"
+            android:textSize="11sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

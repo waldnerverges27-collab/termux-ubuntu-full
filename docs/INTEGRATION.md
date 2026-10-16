@@ -29,12 +29,17 @@ aplicarle una segunda compresión. El APK resultante sí incluye el archivo.
   `Tab`, `Ctrl`, `Alt`, flechas, `Home`, `End`, `PgUp` y `PgDn` de la
   configuración original. La configuración de `extra-keys` de
   `termux.properties` continúa siendo respetada.
-- El explorador permite navegar por Ubuntu cuando el rootfs está instalado o
-  por el home de Termux cuando se ejecuta una sesión normal. Incluye búsqueda
-  sin distinguir mayúsculas/minúsculas en la carpeta actual y una opción para
-  mostrar archivos ocultos (nombres que empiezan por punto). Es de solo
-  lectura: se puede copiar una ruta o insertarla en la terminal; nunca ejecuta
-  automáticamente un comando seleccionado.
+- El explorador navega por el entorno de la sesión activa (Ubuntu o el home
+  de Termux) y permite cambiar al almacenamiento compartido de Android. El acceso
+  compartido se solicita solo cuando el usuario
+  lo elige y usa el flujo de permisos existente de Termux. En Ubuntu se monta en
+  `/mnt/shared` al iniciar una sesión nueva. Incluye búsqueda sin distinguir
+  mayúsculas/minúsculas en la carpeta actual y una opción para mostrar archivos
+  ocultos (nombres que empiezan por punto). Es de solo lectura: se puede copiar
+  una ruta o insertarla en la terminal; nunca ejecuta automáticamente un comando
+  seleccionado.
+- Los controles y mensajes añadidos por este fork tienen traducción al español
+  cuando el idioma del dispositivo está configurado en español.
 - El selector de paletas cambia los acentos de la interfaz y las extra keys
   (Midnight, Ocean, Violet, Forest, Amber y Rose). Los colores del output de
   la terminal siguen bajo el control de Termux/Termux:Styling.

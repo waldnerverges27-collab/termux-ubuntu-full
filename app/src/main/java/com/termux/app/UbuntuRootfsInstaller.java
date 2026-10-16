@@ -30,6 +30,8 @@ final class UbuntuRootfsInstaller {
     private static final String LOGIN_SCRIPT = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login";
     private static final String TERMUX_BIN = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH;
     private static final String TERMUX_LIB = TermuxConstants.TERMUX_LIB_PREFIX_DIR_PATH;
+    private static final String TERMUX_SHARED_STORAGE_DIR = TermuxConstants.TERMUX_HOME_DIR_PATH + "/storage/shared";
+    private static final String UBUNTU_SHARED_STORAGE_DIR = "/mnt/shared";
 
     private UbuntuRootfsInstaller() {}
 
@@ -215,13 +217,18 @@ final class UbuntuRootfsInstaller {
         if (parent != null && !parent.isDirectory() && !parent.mkdirs())
             throw new IOException("Could not create the Termux bin directory.");
 
+        File sharedMountPoint = new File(ROOTFS_DIR, "mnt/shared");
+        if (!sharedMountPoint.isDirectory() && !sharedMountPoint.mkdirs())
+            throw new IOException("Could not create the Ubuntu shared-storage mount point.");
+
         String content = "#!/data/data/com.termux/files/usr/bin/sh\n"
             + "unset LD_PRELOAD\n"
-            + "exec /data/data/com.termux/files/usr/bin/proot --kill-on-exit --link2symlink -0 "
-            + "-E LD_LIBRARY_PATH= "
-            + "-r /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu "
-            + "-b /dev -b /proc -b /sys -w / "
-            + "/usr/bin/env -i "
+            + "set -- --kill-on-exit --link2symlink -0 -E LD_LIBRARY_PATH= "
+            + "-r " + ROOTFS_DIR + " -b /dev -b /proc -b /sys -w /\n"
+            + "if [ -d \"" + TERMUX_SHARED_STORAGE_DIR + "\" ]; then\n"
+            + "  set -- \"$@\" -b \"" + TERMUX_SHARED_STORAGE_DIR + ":" + UBUNTU_SHARED_STORAGE_DIR + "\"\n"
+            + "fi\n"
+            + "exec /data/data/com.termux/files/usr/bin/proot \"$@\" /usr/bin/env -i "
             + "HOME=/root "
             + "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "
             + "TERM=\"${TERM:-xterm-256color}\" "

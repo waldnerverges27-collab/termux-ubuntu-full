@@ -273,6 +273,14 @@
     <string name="premium_file_explorer_title">File explorer</string>
     <string name="premium_file_explorer_ubuntu">Ubuntu</string>
     <string name="premium_file_explorer_termux">Termux home</string>
+    <string name="premium_file_explorer_shared_storage">Shared storage</string>
+    <string name="premium_file_explorer_change_location">Location</string>
+    <string name="premium_file_explorer_choose_location">Choose a location</string>
+    <string name="premium_storage_permission_title">Set up shared storage</string>
+    <string name="premium_storage_permission_message">Termux needs Android storage access to create the ~/storage links. After granting access, choose Shared storage again. New Ubuntu sessions can use it at /mnt/shared. Setup recreates ~/storage, so move any personal files there elsewhere first.</string>
+    <string name="premium_storage_permission_grant">Grant access</string>
+    <string name="premium_storage_permission_pending">Storage setup requested. Select Shared storage again after access is granted.</string>
+    <string name="premium_shared_storage_ubuntu_notice">Ubuntu sees shared storage at /mnt/shared; existing Ubuntu sessions may need to be restarted.</string>
     <string name="premium_file_explorer_home">Home</string>
     <string name="premium_file_explorer_up">Up</string>
     <string name="premium_file_explorer_search_hint">Search this folder</string>
