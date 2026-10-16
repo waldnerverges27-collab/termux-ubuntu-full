@@ -275,7 +275,11 @@
     <string name="premium_file_explorer_termux">Termux home</string>
     <string name="premium_file_explorer_home">Home</string>
     <string name="premium_file_explorer_up">Up</string>
+    <string name="premium_file_explorer_search_hint">Search this folder</string>
+    <string name="premium_file_explorer_show_hidden">Show hidden</string>
     <string name="premium_file_explorer_empty">This folder is empty</string>
+    <string name="premium_file_explorer_no_visible_files">No visible files. Enable Show hidden to view dotfiles.</string>
+    <string name="premium_file_explorer_no_matches">No files match this search</string>
     <string name="premium_file_explorer_unavailable">This folder is unavailable</string>
     <string name="premium_file_explorer_folder">Folder</string>
     <string name="premium_file_explorer_file">File</string>

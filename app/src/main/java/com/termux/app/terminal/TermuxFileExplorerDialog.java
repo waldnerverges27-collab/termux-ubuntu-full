@@ -7,12 +7,16 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,7 +55,12 @@ public final class TermuxFileExplorerDialog {
         private File currentDirectory;
         private TextView locationView;
         private TextView emptyView;
+        private EditText searchView;
         private ListView listView;
+        private final List<File> directoryEntries = new ArrayList<>();
+        private String searchQuery = "";
+        private boolean showHiddenFiles;
+        private boolean directoryUnavailable;
 
         Browser(TermuxActivity activity) {
             this.activity = activity;
@@ -75,7 +84,28 @@ public final class TermuxFileExplorerDialog {
             View content = LayoutInflater.from(activity).inflate(R.layout.dialog_file_explorer, null, false);
             locationView = content.findViewById(R.id.file_explorer_location);
             emptyView = content.findViewById(R.id.file_explorer_empty);
+            searchView = content.findViewById(R.id.file_explorer_search);
+            CheckBox showHidden = content.findViewById(R.id.file_explorer_show_hidden);
             listView = content.findViewById(R.id.file_explorer_list);
+            searchView.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    searchQuery = s == null ? "" : s.toString().trim().toLowerCase(Locale.ROOT);
+                    applyFilter();
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+            showHidden.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                showHiddenFiles = isChecked;
+                applyFilter();
+            });
             listView.setAdapter(adapter);
             listView.setEmptyView(emptyView);
             listView.setOnItemClickListener((parent, view, position, id) -> {
@@ -93,6 +123,7 @@ public final class TermuxFileExplorerDialog {
             content.findViewById(R.id.file_explorer_close).setOnClickListener(v -> dialog.dismiss());
             content.findViewById(R.id.file_explorer_home).setOnClickListener(v -> {
                 currentDirectory = rootDirectory;
+                clearSearch();
                 refresh();
             });
             content.findViewById(R.id.file_explorer_up).setOnClickListener(v -> navigateUp());
@@ -109,7 +140,8 @@ public final class TermuxFileExplorerDialog {
                 WindowManager.LayoutParams attributes = window.getAttributes();
                 attributes.dimAmount = 0.58f;
                 window.setAttributes(attributes);
-                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE |
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
                 int width = activity.getResources().getDisplayMetrics().widthPixels;
                 int height = activity.getResources().getDisplayMetrics().heightPixels;
@@ -146,6 +178,7 @@ public final class TermuxFileExplorerDialog {
                 return;
             }
             currentDirectory = directory;
+            clearSearch();
             refresh();
         }
 
@@ -154,11 +187,11 @@ public final class TermuxFileExplorerDialog {
             File parent = currentDirectory.getParentFile();
             if (parent != null && isInsideRoot(parent, rootDirectory)) {
                 currentDirectory = parent;
-                refresh();
             } else {
                 currentDirectory = rootDirectory;
-                refresh();
             }
+            clearSearch();
+            refresh();
         }
 
         private void refresh() {
@@ -175,9 +208,11 @@ public final class TermuxFileExplorerDialog {
             } catch (SecurityException e) {
                 entries = null;
             }
-            List<File> files = new ArrayList<>();
-            if (entries != null) Collections.addAll(files, entries);
-            Collections.sort(files, new Comparator<File>() {
+
+            directoryEntries.clear();
+            directoryUnavailable = entries == null;
+            if (entries != null) Collections.addAll(directoryEntries, entries);
+            Collections.sort(directoryEntries, new Comparator<File>() {
                 @Override
                 public int compare(File left, File right) {
                     boolean leftDirectory = left.isDirectory();
@@ -186,8 +221,35 @@ public final class TermuxFileExplorerDialog {
                     return left.getName().toLowerCase(Locale.ROOT).compareTo(right.getName().toLowerCase(Locale.ROOT));
                 }
             });
-            adapter.setFiles(files);
-            emptyView.setText(entries == null ? R.string.premium_file_explorer_unavailable : R.string.premium_file_explorer_empty);
+            applyFilter();
+        }
+
+        private void clearSearch() {
+            if (searchView != null && searchView.length() > 0) {
+                searchView.setText("");
+            } else {
+                searchQuery = "";
+            }
+        }
+
+        private void applyFilter() {
+            List<File> visibleFiles = new ArrayList<>();
+            for (File file : directoryEntries) {
+                if (!showHiddenFiles && file.getName().startsWith(".")) continue;
+                if (!searchQuery.isEmpty() && !file.getName().toLowerCase(Locale.ROOT).contains(searchQuery)) continue;
+                visibleFiles.add(file);
+            }
+            adapter.setFiles(visibleFiles);
+
+            if (directoryUnavailable) {
+                emptyView.setText(R.string.premium_file_explorer_unavailable);
+            } else if (!searchQuery.isEmpty()) {
+                emptyView.setText(R.string.premium_file_explorer_no_matches);
+            } else if (!directoryEntries.isEmpty() && visibleFiles.isEmpty()) {
+                emptyView.setText(R.string.premium_file_explorer_no_visible_files);
+            } else {
+                emptyView.setText(R.string.premium_file_explorer_empty);
+            }
         }
 
         private void showFileActions(File file) {

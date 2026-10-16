@@ -30,7 +30,9 @@ aplicarle una segunda compresión. El APK resultante sí incluye el archivo.
   configuración original. La configuración de `extra-keys` de
   `termux.properties` continúa siendo respetada.
 - El explorador permite navegar por Ubuntu cuando el rootfs está instalado o
-  por el home de Termux cuando se ejecuta una sesión normal. Es de solo
+  por el home de Termux cuando se ejecuta una sesión normal. Incluye búsqueda
+  sin distinguir mayúsculas/minúsculas en la carpeta actual y una opción para
+  mostrar archivos ocultos (nombres que empiezan por punto). Es de solo
   lectura: se puede copiar una ruta o insertarla en la terminal; nunca ejecuta
   automáticamente un comando seleccionado.
 - El selector de paletas cambia los acentos de la interfaz y las extra keys
