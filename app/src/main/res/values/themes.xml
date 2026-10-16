@@ -1,49 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-     https://material.io/develop/android/theming/dark
-    -->
+    <!-- Termux app base themes. -->
+    <style name="Theme.TermuxApp.Light.DarkActionBar" parent="Theme.BaseActivity.Light.DarkActionBar" />
+    <style name="Theme.TermuxApp.Light.NoActionBar" parent="Theme.BaseActivity.Light.NoActionBar" />
+    <style name="Theme.TermuxApp.DayNight.DarkActionBar" parent="Theme.BaseActivity.DayNight.DarkActionBar" />
+    <style name="Theme.TermuxApp.DayNight.NoActionBar" parent="Theme.BaseActivity.DayNight.NoActionBar" />
 
-    <!-- TermuxApp Light DarkActionBar theme. -->
-    <style name="Theme.TermuxApp.Light.DarkActionBar" parent="Theme.BaseActivity.Light.DarkActionBar"/>
-    <!-- TermuxApp Light NoActionBar theme. -->
-    <style name="Theme.TermuxApp.Light.NoActionBar" parent="Theme.BaseActivity.Light.NoActionBar"/>
-
-    <!-- TermuxApp DayNight DarkActionBar theme. -->
-    <style name="Theme.TermuxApp.DayNight.DarkActionBar" parent="Theme.BaseActivity.DayNight.DarkActionBar"/>
-    <!-- TermuxApp DayNight NoActionBar theme. -->
-    <style name="Theme.TermuxApp.DayNight.NoActionBar" parent="Theme.BaseActivity.DayNight.NoActionBar"/>
-
-
-    <!-- TermuxActivity DayNight NoActionBar theme. -->
+    <!-- Premium terminal chrome; terminal colors themselves remain user-configurable. -->
     <style name="Theme.TermuxActivity.DayNight.NoActionBar" parent="Theme.TermuxApp.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/black</item>
-        <item name="colorPrimaryVariant">@color/black</item>
-
-        <item name="android:windowBackground">@color/black</item>
-
-        <!-- Avoid action mode toolbar pushing down terminal content when
-             selecting text on pre-6.0 (non-floating toolbar). -->
+        <item name="colorPrimary">@color/premium_accent</item>
+        <item name="colorPrimaryVariant">@color/premium_background</item>
+        <item name="colorSecondary">@color/premium_accent_cyan</item>
+        <item name="colorAccent">@color/premium_accent</item>
+        <item name="android:windowBackground">@color/premium_background</item>
         <item name="android:windowActionModeOverlay">true</item>
-
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
-
-        <!-- https://developer.android.com/training/tv/start/start.html#transition-color -->
         <item name="android:windowAllowReturnTransitionOverlap">true</item>
         <item name="android:windowAllowEnterTransitionOverlap">true</item>
 
-        <!-- Left drawer. -->
-        <item name="buttonBarButtonStyle">@style/TermuxActivity.Drawer.ButtonBarStyle.Light</item>
-        <item name="termuxActivityDrawerBackground">@color/white</item>
-        <item name="termuxActivityDrawerImageTint">@color/black</item>
+        <item name="buttonBarButtonStyle">@style/TermuxActivity.Drawer.ButtonBarStyle.Premium</item>
+        <item name="termuxActivityDrawerBackground">@color/premium_drawer</item>
+        <item name="termuxActivityDrawerImageTint">@color/premium_text</item>
 
-        <!-- Extra keys colors. -->
-        <item name="extraKeysButtonTextColor">@color/white</item>
-        <item name="extraKeysButtonActiveTextColor">@color/red_400</item>
-        <item name="extraKeysButtonBackgroundColor">@color/black</item>
-        <item name="extraKeysButtonActiveBackgroundColor">@color/grey_500</item>
+        <item name="extraKeysButtonTextColor">@color/premium_muted</item>
+        <item name="extraKeysButtonActiveTextColor">@color/premium_accent_cyan</item>
+        <item name="extraKeysButtonBackgroundColor">@color/premium_key_background</item>
+        <item name="extraKeysButtonActiveBackgroundColor">@color/premium_key_active_background</item>
     </style>
 
+    <style name="Theme.TermuxPremiumDialog" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="colorPrimary">@color/premium_accent</item>
+        <item name="colorSecondary">@color/premium_accent_cyan</item>
+        <item name="colorSurface">@color/premium_surface</item>
+        <item name="colorOnSurface">@color/premium_text</item>
+        <item name="android:colorAccent">@color/premium_accent</item>
+        <item name="android:textColorPrimary">@color/premium_text</item>
+        <item name="android:textColorSecondary">@color/premium_muted</item>
+        <item name="android:windowBackground">@drawable/premium_dialog_background</item>
+    </style>
 </resources>

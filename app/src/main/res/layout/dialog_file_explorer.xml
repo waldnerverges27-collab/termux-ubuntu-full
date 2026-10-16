@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/file_explorer_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/premium_dialog_background"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/file_explorer_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/premium_file_explorer_title"
+            android:textColor="@color/premium_text"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/file_explorer_close"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/premium_icon_button_background"
+            android:contentDescription="@string/premium_close"
+            android:gravity="center"
+            android:text="×"
+            android:textColor="@color/premium_muted"
+            android:textSize="24sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/file_explorer_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="middle"
+        android:maxLines="1"
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp"
+        android:textColor="@color/premium_accent_cyan"
+        android:textSize="11sp"
+        android:typeface="monospace" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/file_explorer_home"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/premium_file_explorer_home"
+            android:textAllCaps="false"
+            android:textColor="@color/premium_text"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/file_explorer_up"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@string/premium_file_explorer_up"
+            android:textAllCaps="false"
+            android:textColor="@color/premium_text"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/file_explorer_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_weight="1"
+        android:cacheColorHint="@android:color/transparent"
+        android:divider="@color/premium_border"
+        android:dividerHeight="1dp"
+        android:overScrollMode="ifContentScrolls" />
+
+    <TextView
+        android:id="@+id/file_explorer_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="22dp"
+        android:text="@string/premium_file_explorer_empty"
+        android:textColor="@color/premium_muted"
+        android:visibility="gone" />
+</LinearLayout>

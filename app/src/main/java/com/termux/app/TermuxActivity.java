@@ -10,19 +10,23 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.Uri;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -46,6 +50,9 @@ import com.termux.shared.termux.settings.preferences.TermuxAppSharedPreferences;
 import com.termux.app.terminal.TermuxSessionsListViewController;
 import com.termux.app.terminal.io.TerminalToolbarViewPager;
 import com.termux.app.terminal.TermuxTerminalViewClient;
+import com.termux.app.terminal.TermuxCommandPaletteDialog;
+import com.termux.app.terminal.TermuxFileExplorerDialog;
+import com.termux.app.terminal.TermuxPremiumTheme;
 import com.termux.shared.termux.extrakeys.ExtraKeysView;
 import com.termux.shared.termux.interact.TextInputDialogUtils;
 import com.termux.shared.logger.Logger;
@@ -55,6 +62,7 @@ import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
 import com.termux.shared.view.ViewUtils;
 import com.termux.terminal.TerminalSession;
+import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
 import com.termux.view.TerminalViewClient;
@@ -63,6 +71,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.core.content.ContextCompat;
 import androidx.viewpager.widget.ViewPager;
 
 import java.util.Arrays;
@@ -175,6 +184,9 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     private float mTerminalToolbarDefaultHeight;
 
+    /** Subtitle and quick session tabs in the premium terminal app bar. */
+    private TextView mPremiumSessionSubtitle;
+
 
     private static final int CONTEXT_MENU_SELECT_URL_ID = 0;
     private static final int CONTEXT_MENU_SHARE_TRANSCRIPT_ID = 1;
@@ -228,6 +240,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         mTermuxActivityRootView = findViewById(R.id.activity_termux_root_view);
         mTermuxActivityRootView.setActivity(this);
+        mPremiumSessionSubtitle = findViewById(R.id.premium_session_subtitle);
         mTermuxActivityBottomSpaceView = findViewById(R.id.activity_termux_bottom_space_view);
         mTermuxActivityRootView.setOnApplyWindowInsetsListener(new TermuxActivityRootView.WindowInsetsListener());
 
@@ -250,6 +263,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         setNewSessionButtonView();
 
         setToggleKeyboardView();
+        setPremiumControlViews();
+        TermuxPremiumTheme.apply(this);
 
         registerForContextMenu(mTerminalView);
 
@@ -564,29 +579,41 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
     private void setSettingsButtonView() {
-        ImageButton settingsButton = findViewById(R.id.settings_button);
-        settingsButton.setOnClickListener(v -> {
+        View.OnClickListener openSettings = v ->
             ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
-        });
+        findViewById(R.id.settings_button).setOnClickListener(openSettings);
+        findViewById(R.id.premium_settings_button).setOnClickListener(openSettings);
     }
 
     private void setNewSessionButtonView() {
-        View newSessionButton = findViewById(R.id.new_session_button);
-        newSessionButton.setOnClickListener(v -> mTermuxTerminalSessionActivityClient.addNewSession(false, null));
-        newSessionButton.setOnLongClickListener(v -> {
+        View.OnClickListener createSession = v -> mTermuxTerminalSessionActivityClient.addNewSession(false, null);
+        View.OnLongClickListener createNamedSession = v -> {
             TextInputDialogUtils.textInput(TermuxActivity.this, R.string.title_create_named_session, null,
                 R.string.action_create_named_session_confirm, text -> mTermuxTerminalSessionActivityClient.addNewSession(false, text),
                 R.string.action_new_session_failsafe, text -> mTermuxTerminalSessionActivityClient.addNewSession(true, text),
                 -1, null, null);
             return true;
-        });
+        };
+        View drawerButton = findViewById(R.id.new_session_button);
+        View appBarButton = findViewById(R.id.premium_new_session_button);
+        drawerButton.setOnClickListener(createSession);
+        drawerButton.setOnLongClickListener(createNamedSession);
+        appBarButton.setOnClickListener(createSession);
+        appBarButton.setOnLongClickListener(createNamedSession);
+    }
+
+    private void setPremiumControlViews() {
+        findViewById(R.id.premium_sessions_button).setOnClickListener(v -> getDrawer().openDrawer(Gravity.LEFT));
+        findViewById(R.id.premium_command_palette_button).setOnClickListener(v -> showCommandPalette());
+        findViewById(R.id.premium_file_explorer_button).setOnClickListener(v -> TermuxFileExplorerDialog.show(this));
     }
 
     private void setToggleKeyboardView() {
-        findViewById(R.id.toggle_keyboard_button).setOnClickListener(v -> {
+        View.OnClickListener toggleKeyboard = v -> {
             mTermuxTerminalViewClient.onToggleSoftKeyboardRequest();
             getDrawer().closeDrawers();
-        });
+        };
+        findViewById(R.id.toggle_keyboard_button).setOnClickListener(toggleKeyboard);
 
         findViewById(R.id.toggle_keyboard_button).setOnLongClickListener(v -> {
             toggleTerminalToolbar();
@@ -597,6 +624,127 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
 
+
+    private void showCommandPalette() {
+        TermuxCommandPaletteDialog.show(this, this::handleCommandPaletteAction);
+    }
+
+    private void handleCommandPaletteAction(String actionId) {
+        if (TermuxCommandPaletteDialog.ACTION_NEW_SESSION.equals(actionId)) {
+            mTermuxTerminalSessionActivityClient.addNewSession(false, null);
+        } else if (TermuxCommandPaletteDialog.ACTION_SESSIONS.equals(actionId)) {
+            getDrawer().openDrawer(Gravity.LEFT);
+        } else if (TermuxCommandPaletteDialog.ACTION_FILES.equals(actionId)) {
+            TermuxFileExplorerDialog.show(this);
+        } else if (TermuxCommandPaletteDialog.ACTION_SETTINGS.equals(actionId)) {
+            ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
+        } else if (TermuxCommandPaletteDialog.ACTION_APPEARANCE.equals(actionId)) {
+            TermuxPremiumTheme.showPicker(this);
+        } else if (TermuxCommandPaletteDialog.ACTION_EXTRA_KEYS.equals(actionId)) {
+            toggleTerminalToolbar();
+        } else if (TermuxCommandPaletteDialog.ACTION_KEYBOARD.equals(actionId)) {
+            mTermuxTerminalViewClient.onToggleSoftKeyboardRequest();
+        } else if (TermuxCommandPaletteDialog.ACTION_SHARE.equals(actionId)) {
+            mTermuxTerminalViewClient.shareSessionTranscript();
+        } else if (TermuxCommandPaletteDialog.ACTION_RESET.equals(actionId)) {
+            onResetTerminalSession(getCurrentSession());
+        } else if (TermuxCommandPaletteDialog.ACTION_HELP.equals(actionId)) {
+            ActivityUtils.startActivity(this, new Intent(this, HelpActivity.class));
+        }
+    }
+
+    /** Refresh the session chips and active-session label in the responsive app bar. */
+    public void updatePremiumSessionHeader() {
+        refreshPremiumSessionTabs();
+    }
+
+    private void refreshPremiumSessionTabs() {
+        LinearLayout tabs = findViewById(R.id.premium_session_tabs);
+        HorizontalScrollView tabScroller = findViewById(R.id.premium_session_scroll);
+        if (tabs == null || tabScroller == null) return;
+
+        tabs.removeAllViews();
+        if (mTermuxService == null || mTermuxService.getTermuxSessionsSize() == 0) {
+            tabScroller.setVisibility(View.GONE);
+            if (mPremiumSessionSubtitle != null) mPremiumSessionSubtitle.setText(R.string.premium_session_empty);
+            return;
+        }
+
+        tabScroller.setVisibility(View.VISIBLE);
+        TerminalSession activeSession = getCurrentSession();
+        int sessionCount = mTermuxService.getTermuxSessionsSize();
+        for (int index = 0; index < sessionCount; index++) {
+            TermuxSession termuxSession = mTermuxService.getTermuxSession(index);
+            if (termuxSession == null || termuxSession.getTerminalSession() == null) continue;
+            TerminalSession session = termuxSession.getTerminalSession();
+            boolean isActive = session == activeSession;
+            String label = session.mSessionName;
+            if (label == null || label.trim().isEmpty()) label = session.getTitle();
+            if (label == null || label.trim().isEmpty()) label = getString(R.string.premium_session_default_name, index + 1);
+
+            LinearLayout tab = new LinearLayout(this);
+            tab.setOrientation(LinearLayout.HORIZONTAL);
+            tab.setGravity(Gravity.CENTER_VERTICAL);
+            tab.setPadding(dpToPx(9), 0, dpToPx(10), 0);
+            tab.setMinimumWidth(dpToPx(68));
+            tab.setBackground(TermuxPremiumTheme.createSessionTabBackground(this, isActive));
+            tab.setClickable(true);
+            tab.setFocusable(true);
+            tab.setSelected(isActive);
+            tab.setContentDescription(getString(R.string.premium_session_switch, label));
+
+            View statusDot = new View(this);
+            GradientDrawable dot = new GradientDrawable();
+            dot.setShape(GradientDrawable.OVAL);
+            dot.setColor(session.isRunning() ? TermuxPremiumTheme.getRunningColor(this) :
+                ContextCompat.getColor(this, R.color.premium_dim));
+            statusDot.setBackground(dot);
+            LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(dpToPx(7), dpToPx(7));
+            dotParams.setMarginEnd(dpToPx(6));
+            tab.addView(statusDot, dotParams);
+
+            TextView title = new TextView(this);
+            title.setText(label);
+            title.setTextColor(ContextCompat.getColor(this, isActive ? R.color.premium_text : R.color.premium_muted));
+            title.setTextSize(11);
+            title.setSingleLine(true);
+            title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            title.setMaxWidth(dpToPx(150));
+            tab.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            tab.setOnClickListener(v -> {
+                mTermuxTerminalSessionActivityClient.setCurrentSession(session);
+                getDrawer().closeDrawers();
+            });
+            LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dpToPx(28));
+            tabParams.setMarginEnd(dpToPx(6));
+            tabs.addView(tab, tabParams);
+            if (isActive) {
+                tabScroller.post(() -> tabScroller.smoothScrollTo(tab.getLeft(), 0));
+                if (mPremiumSessionSubtitle != null) {
+                    String subtitle = session.mSessionName;
+                    if (subtitle == null || subtitle.trim().isEmpty()) subtitle = session.getTitle();
+                    if (subtitle == null || subtitle.trim().isEmpty()) subtitle = getString(R.string.premium_session_subtitle);
+                    if (!session.isRunning()) subtitle = getString(R.string.premium_session_stopped);
+                    mPremiumSessionSubtitle.setText(subtitle);
+                }
+            }
+        }
+    }
+
+    private int dpToPx(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
+            event.getKeyCode() == KeyEvent.KEYCODE_P && event.isCtrlPressed() && event.isShiftPressed()) {
+            showCommandPalette();
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
 
     @SuppressLint("RtlHardcoded")
     @Override
@@ -856,7 +1004,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
     public void termuxSessionListNotifyUpdated() {
-        mTermuxSessionListViewController.notifyDataSetChanged();
+        if (mTermuxSessionListViewController != null) mTermuxSessionListViewController.notifyDataSetChanged();
+        refreshPremiumSessionTabs();
     }
 
     public boolean isVisible() {

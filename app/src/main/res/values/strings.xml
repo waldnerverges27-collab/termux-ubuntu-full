@@ -235,4 +235,70 @@
     <!-- Donate Preference -->
     <string name="donate_preference_title">Donate</string>
 
+
+
+    <!-- Premium terminal interface -->
+    <string name="premium_app_title">Termux Pro</string>
+    <string name="premium_session_subtitle">Ubuntu terminal</string>
+    <string name="premium_session_empty">Starting terminal…</string>
+    <string name="premium_open_sessions">Open terminal sessions</string>
+    <string name="premium_open_command_palette">Open command palette</string>
+    <string name="premium_open_file_explorer">Open file explorer</string>
+    <string name="premium_session_switch">Switch to %1$s</string>
+    <string name="premium_session_running">Running</string>
+    <string name="premium_session_stopped">Stopped</string>
+    <string name="premium_session_default_name">Session %1$d</string>
+    <string name="premium_palette_title">Command palette</string>
+    <string name="premium_palette_hint">Search actions…</string>
+    <string name="premium_palette_shortcut">Ctrl + Shift + P</string>
+    <string name="premium_palette_new_session">New session</string>
+    <string name="premium_palette_new_session_summary">Open another terminal session</string>
+    <string name="premium_palette_sessions">Switch session</string>
+    <string name="premium_palette_sessions_summary">Choose one of your open sessions</string>
+    <string name="premium_palette_files">Browse files</string>
+    <string name="premium_palette_files_summary">Explore the current Linux environment</string>
+    <string name="premium_palette_settings">Settings</string>
+    <string name="premium_palette_settings_summary">Configure terminal and input behavior</string>
+    <string name="premium_palette_extra_keys">Toggle extra keys</string>
+    <string name="premium_palette_extra_keys_summary">Show or hide Esc, Tab, Ctrl, Alt and navigation keys</string>
+    <string name="premium_palette_keyboard">Toggle keyboard</string>
+    <string name="premium_palette_keyboard_summary">Show or hide the Android keyboard</string>
+    <string name="premium_palette_share">Share transcript</string>
+    <string name="premium_palette_share_summary">Share the current terminal output</string>
+    <string name="premium_palette_reset">Reset terminal</string>
+    <string name="premium_palette_reset_summary">Clear the current terminal screen</string>
+    <string name="premium_palette_help">Help</string>
+    <string name="premium_palette_help_summary">Open Termux help</string>
+    <string name="premium_palette_no_results">No matching actions</string>
+    <string name="premium_file_explorer_title">File explorer</string>
+    <string name="premium_file_explorer_ubuntu">Ubuntu</string>
+    <string name="premium_file_explorer_termux">Termux home</string>
+    <string name="premium_file_explorer_home">Home</string>
+    <string name="premium_file_explorer_up">Up</string>
+    <string name="premium_file_explorer_empty">This folder is empty</string>
+    <string name="premium_file_explorer_unavailable">This folder is unavailable</string>
+    <string name="premium_file_explorer_folder">Folder</string>
+    <string name="premium_file_explorer_file">File</string>
+    <string name="premium_file_action_title">%1$s</string>
+    <string name="premium_file_action_insert_cd">Insert cd command</string>
+    <string name="premium_file_action_insert_path">Insert path</string>
+    <string name="premium_file_action_copy_path">Copy path</string>
+    <string name="premium_file_action_copy_success">Path copied</string>
+    <string name="premium_file_action_insert_success">Path inserted into terminal</string>
+    <string name="premium_file_action_no_session">No active terminal session</string>
+    <string name="premium_file_action_failed">The path could not be inserted</string>
+    <string name="premium_close">Close</string>
+
+
+    <string name="premium_palette_appearance">UI color palette</string>
+    <string name="premium_palette_appearance_summary">Choose an accent style for the terminal controls</string>
+    <string name="premium_theme_picker_title">Choose an accent palette</string>
+    <string name="premium_theme_changed">Accent palette updated</string>
+    <string name="premium_theme_midnight">Midnight</string>
+    <string name="premium_theme_ocean">Ocean</string>
+    <string name="premium_theme_violet">Violet</string>
+    <string name="premium_theme_forest">Forest</string>
+    <string name="premium_theme_amber">Amber</string>
+    <string name="premium_theme_rose">Rose</string>
+
 </resources>

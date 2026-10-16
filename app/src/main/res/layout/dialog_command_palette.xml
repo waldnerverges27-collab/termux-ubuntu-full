@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/command_palette_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/premium_dialog_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/premium_palette_title"
+            android:textColor="@color/premium_text"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/premium_search_background"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp"
+            android:text="@string/premium_palette_shortcut"
+            android:textColor="@color/premium_accent_cyan"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/command_palette_search"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/premium_search_background"
+        android:hint="@string/premium_palette_hint"
+        android:imeOptions="actionDone|flagNoExtractUi"
+        android:inputType="text"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:singleLine="true"
+        android:textColor="@color/premium_text"
+        android:textColorHint="@color/premium_dim"
+        android:textSize="14sp" />
+
+    <ListView
+        android:id="@+id/command_palette_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:cacheColorHint="@android:color/transparent"
+        android:divider="@color/premium_border"
+        android:dividerHeight="1dp"
+        android:drawSelectorOnTop="true"
+        android:fastScrollEnabled="false"
+        android:overScrollMode="ifContentScrolls"
+        android:scrollbarStyle="insideOverlay" />
+
+    <TextView
+        android:id="@+id/command_palette_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="@string/premium_palette_no_results"
+        android:textColor="@color/premium_muted"
+        android:visibility="gone" />
+</LinearLayout>

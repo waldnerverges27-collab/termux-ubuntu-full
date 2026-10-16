@@ -37,3 +37,6 @@ local.properties
 .swp
 ehthumbs.db
 Thumbs.db
+
+# Large Ubuntu rootfs is distributed as a release asset and staged locally for builds.
+app/src/main/assets/ubuntu-rootfs.tar.xz
