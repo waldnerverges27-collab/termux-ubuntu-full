@@ -23,7 +23,8 @@ aplicarle una segunda compresión. El APK resultante sí incluye el archivo.
   desplazamiento horizontal cuando no caben en pantalla.
 - La paleta de comandos se abre con el botón de búsqueda o con `Ctrl+Shift+P`.
   Permite filtrar acciones como crear/cambiar sesión, ajustes, extra keys,
-  teclado, explorador, compartir y reiniciar la terminal.
+  teclado, explorador, compartir y reiniciar la terminal. El explorador de
+  archivos también se puede abrir directamente con `Alt+F`.
 - La fila de extra keys sigue usando `TermuxExtraKeysView`; conserva `Esc`,
   `Tab`, `Ctrl`, `Alt`, flechas, `Home`, `End`, `PgUp` y `PgDn` de la
   configuración original. La configuración de `extra-keys` de

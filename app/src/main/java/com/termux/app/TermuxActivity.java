@@ -787,10 +787,17 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     @Override
     public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
-            event.getKeyCode() == KeyEvent.KEYCODE_P && event.isCtrlPressed() && event.isShiftPressed()) {
-            showCommandPalette();
-            return true;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            if (event.getKeyCode() == KeyEvent.KEYCODE_P && event.isCtrlPressed() && event.isShiftPressed()) {
+                showCommandPalette();
+                return true;
+            }
+            // Keep the Alt+F shortcut advertised by the command palette functional.
+            if (event.getKeyCode() == KeyEvent.KEYCODE_F && event.isAltPressed()
+                && !event.isCtrlPressed() && !event.isShiftPressed()) {
+                TermuxFileExplorerDialog.show(this);
+                return true;
+            }
         }
         return super.dispatchKeyEvent(event);
     }
