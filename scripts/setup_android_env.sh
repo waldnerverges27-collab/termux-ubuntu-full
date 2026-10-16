@@ -3,6 +3,9 @@
 # Run after a session restart: bash ~/setup_android_env.sh
 set -Eeuo pipefail
 
+# Minimal build containers may omit the system-administration directories.
+export PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
+
 SWAP_SIZE_GB=8
 ANDROID_SDK=/opt/android-sdk
 GRADLE_DIR=/opt/gradle
