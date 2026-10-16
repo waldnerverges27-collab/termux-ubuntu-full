@@ -13,7 +13,7 @@ ROOTFS_TARBALL=/opt/ubuntu-rootfs.tar.xz
 ROOTFS_DIR=/opt/ubuntu-rootfs
 PROOT_ASSET_BACKUP_DIR=/opt/termux-assets
 PROJECT_DIR=/opt/work/work/termux-app
-GIT_DIR=/opt/.termux-repo
+GIT_DIR=/opt/work/.termux-repo
 REPOSITORY_URL=https://github.com/waldnerverges27-collab/termux-ubuntu-full.git
 
 log() { printf '[setup] %s\n' "$*"; }
@@ -49,7 +49,8 @@ sudo rm -rf /var/lib/apt/lists/*
 # recovery does not need credentials. If it is gone, provide GITHUB_TOKEN as an
 # environment variable with read/write access; no token is stored in this script.
 if [ ! -e "$PROJECT_DIR/.git" ]; then
-  sudo mkdir -p "$(dirname "$PROJECT_DIR")"
+  sudo mkdir -p /opt/work "$(dirname "$PROJECT_DIR")"
+  sudo chown -R "$USER:$USER" /opt/work
   if [ -d "$GIT_DIR" ]; then
     git --git-dir="$GIT_DIR" worktree prune
     git --git-dir="$GIT_DIR" worktree add "$PROJECT_DIR" main
@@ -70,7 +71,7 @@ ASKPASS_SCRIPT
     rm -f "$ASKPASS"
     unset GIT_ASKPASS GIT_TERMINAL_PROMPT GITHUB_TOKEN
   else
-    echo "Private repository checkout is missing. Restore /opt/.termux-repo or set GITHUB_TOKEN and rerun." >&2
+    echo "Private repository checkout is missing. Restore /opt/work/.termux-repo or set GITHUB_TOKEN and rerun." >&2
     exit 1
   fi
 fi
