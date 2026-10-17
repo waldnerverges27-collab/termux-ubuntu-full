@@ -42,7 +42,7 @@ public final class UbuntuRootfsInstaller {
         + "/var/lib/proot-distro/installed-rootfs/ubuntu-rootfs";
     private static final String PROOT_DEST = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/proot";
     private static final String LOGIN_SCRIPT = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login";
-    private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=4";
+    private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=5";
     private static final String TERMUX_BIN = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH;
     private static final String TERMUX_LIB = TermuxConstants.TERMUX_LIB_PREFIX_DIR_PATH;
     private static final String PROOT_LIBTALLOC_ASSET = "proot-libs/arm64-v8a/libtalloc.so.2";
@@ -621,6 +621,8 @@ public final class UbuntuRootfsInstaller {
             + "exec /bin/bash -l -c '"
             + "if [ -n \"$TERMUX_UBUNTU_ENV_FILE\" ] && [ -r \"$TERMUX_UBUNTU_ENV_FILE\" ]; then . \"$TERMUX_UBUNTU_ENV_FILE\"; fi; "
             + "if [ -n \"$TERMUX_UBUNTU_WORKDIR\" ] && [ -d \"$TERMUX_UBUNTU_WORKDIR\" ]; then cd -- \"$TERMUX_UBUNTU_WORKDIR\"; else cd \"$HOME\"; fi; "
+            + "DEFAULT_SHELL=bash; if [ -r /etc/termux-zsh/default-shell ]; then IFS= read -r DEFAULT_SHELL < /etc/termux-zsh/default-shell || DEFAULT_SHELL=bash; fi; "
+            + "if [ \"$DEFAULT_SHELL\" = zsh ]; then if [ -x /usr/bin/zsh ]; then exec /usr/bin/zsh -l -i; fi; if [ -x /bin/zsh ]; then exec /bin/zsh -l -i; fi; fi; "
             + "exec /bin/bash -i'\n"
             + "TERMUX_UBUNTU_BOOTSTRAP\n"
             + ")\n"

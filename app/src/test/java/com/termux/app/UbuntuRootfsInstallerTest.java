@@ -28,7 +28,11 @@ public class UbuntuRootfsInstallerTest {
     public void generatedLoginScriptUsesSupportedProotArgumentsAndBashBootstrap() {
         String script = UbuntuRootfsInstaller.buildLoginScriptContent();
 
-        Assert.assertTrue(script.contains("# TERMUX_UBUNTU_LOGIN_VERSION=4"));
+        Assert.assertTrue(script.contains("# TERMUX_UBUNTU_LOGIN_VERSION=5"));
+        Assert.assertTrue("A module-managed Ubuntu Zsh default must be honored for new login sessions.",
+            script.contains("/etc/termux-zsh/default-shell"));
+        Assert.assertTrue(script.contains("DEFAULT_SHELL=bash"));
+        Assert.assertTrue(script.contains("exec /usr/bin/zsh -l -i"));
         Assert.assertTrue(script.contains("unset LD_PRELOAD LD_LIBRARY_PATH\n"));
         Assert.assertTrue(script.contains("--kill-on-exit --link2symlink -0 -r "));
         Assert.assertFalse("Do not pass the unsupported uppercase -E option to PRoot.", script.contains(" -E "));

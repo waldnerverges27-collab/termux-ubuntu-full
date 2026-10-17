@@ -19,6 +19,7 @@ import com.termux.shared.activities.ReportActivity;
 import com.termux.shared.file.FileUtils;
 import com.termux.shared.models.ReportInfo;
 import com.termux.app.models.UserAction;
+import com.termux.app.terminal.ZshShellDialog;
 import com.termux.shared.interact.ShareUtils;
 import com.termux.shared.android.PackageUtils;
 import com.termux.shared.termux.settings.preferences.TermuxAPIAppSharedPreferences;
@@ -67,6 +68,7 @@ public class SettingsActivity extends AppCompatActivity {
 
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
             configureAppLanguagePreference();
+            configureZshShellPreference();
 
             new Thread() {
                 @Override
@@ -79,6 +81,15 @@ public class SettingsActivity extends AppCompatActivity {
                     configureDonatePreference(context);
                 }
             }.start();
+        }
+
+        private void configureZshShellPreference() {
+            Preference preference = findPreference("zsh_shell_module");
+            if (preference == null) return;
+            preference.setOnPreferenceClickListener(clicked -> {
+                if (getActivity() != null) ZshShellDialog.show(getActivity());
+                return true;
+            });
         }
 
         private void configureAppLanguagePreference() {

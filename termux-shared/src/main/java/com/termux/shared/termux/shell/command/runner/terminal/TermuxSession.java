@@ -19,7 +19,12 @@ import com.termux.shared.shell.ShellUtils;
 import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -93,11 +98,37 @@ public class TermuxSession {
         boolean isLoginShell = false;
         if (executionCommand.executable == null) {
             if (!executionCommand.isFailsafe) {
-                for (String shellBinary : UnixShellEnvironment.LOGIN_SHELL_BINARIES) {
-                    File shellFile = new File(defaultBinPath, shellBinary);
-                    if (shellFile.canExecute()) {
-                        executionCommand.executable = shellFile.getAbsolutePath();
-                        break;
+                // The optional shell module stores only a supported shell name in this file. An
+                // explicit per-user choice takes precedence over the legacy binary priority list.
+                String preferredShell = readConfiguredShellName(
+                    new File(shellEnvironmentClient.getDefaultWorkingDirectoryPath()));
+                if (preferredShell != null) {
+                    File preferredShellFile = new File(defaultBinPath, preferredShell);
+                    if (preferredShellFile.canExecute()) {
+                        executionCommand.executable = preferredShellFile.getAbsolutePath();
+                        isLoginShell = true;
+                        if (!new File(executionCommand.workingDirectory).isDirectory())
+                            executionCommand.workingDirectory = shellEnvironmentClient.getDefaultWorkingDirectoryPath();
+                    } else {
+                        // If an installed preferred shell was removed, keep a usable host session
+                        // by trying Bash before falling back to the legacy login-shell order.
+                        File bashRecoveryShell = new File(defaultBinPath, "bash");
+                        if (bashRecoveryShell.canExecute()) {
+                            executionCommand.executable = bashRecoveryShell.getAbsolutePath();
+                            isLoginShell = true;
+                            if (!new File(executionCommand.workingDirectory).isDirectory())
+                                executionCommand.workingDirectory = shellEnvironmentClient.getDefaultWorkingDirectoryPath();
+                        }
+                    }
+                }
+
+                if (executionCommand.executable == null) {
+                    for (String shellBinary : UnixShellEnvironment.LOGIN_SHELL_BINARIES) {
+                        File shellFile = new File(defaultBinPath, shellBinary);
+                        if (shellFile.canExecute()) {
+                            executionCommand.executable = shellFile.getAbsolutePath();
+                            break;
+                        }
                     }
                 }
             }
@@ -162,6 +193,25 @@ public class TermuxSession {
         }
 
         return new TermuxSession(terminalSession, executionCommand, termuxSessionClient, setStdoutOnExit);
+    }
+
+    /** Read the module-managed default shell name without accepting executable paths or commands. */
+    static String readConfiguredShellName(File termuxHome) {
+        if (termuxHome == null) return null;
+        File shellPreference = new File(new File(termuxHome, ".termux"), "shell");
+        if (!shellPreference.isFile()) return null;
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+            new FileInputStream(shellPreference), StandardCharsets.UTF_8))) {
+            String name = reader.readLine();
+            if (name == null) return null;
+            name = name.trim();
+            if ("bash".equals(name) || "zsh".equals(name) || "fish".equals(name) || "sh".equals(name))
+                return name;
+        } catch (IOException ignored) {
+            // Invalid or unreadable preferences fall back to the normal shell discovery order.
+        }
+        return null;
     }
 
     /**

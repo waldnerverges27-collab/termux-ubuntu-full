@@ -354,6 +354,36 @@
     <string name="ubuntu_setup_diagnostics_label">Ubuntu setup diagnostics</string>
     <string name="ubuntu_setup_diagnostics_copied">Diagnostics copied</string>
 
+    <!-- Optional Zsh shell module -->
+    <string name="zsh_module_preference_title">Zsh Shell</string>
+    <string name="zsh_module_preference_summary">Install Zsh and the requested theme/plugins in Termux and Ubuntu; keep Bash available.</string>
+    <string name="zsh_module_dialog_title">Zsh Shell module</string>
+    <string name="zsh_module_dialog_intro">Installing enables Zsh by default for new Termux host shells and Ubuntu sessions. Theme and plugin sources are downloaded when you install.</string>
+    <string name="zsh_module_termux_status">Termux host: %1$s</string>
+    <string name="zsh_module_ubuntu_status">Ubuntu: %1$s</string>
+    <string name="zsh_module_theme_row">Theme · powerlevel10k — Termux: %1$s · Ubuntu: %2$s</string>
+    <string name="zsh_module_plugin_row">Plugin · %1$s — Termux: %2$s · Ubuntu: %3$s</string>
+    <string name="zsh_module_installed">installed</string>
+    <string name="zsh_module_missing">missing</string>
+    <string name="zsh_module_state_zsh_default">Zsh installed · default for new sessions</string>
+    <string name="zsh_module_state_installed_not_default">Zsh installed · Bash remains the default</string>
+    <string name="zsh_module_state_not_installed">Zsh is not installed</string>
+    <string name="zsh_module_ubuntu_not_ready">Ubuntu is not ready</string>
+    <string name="zsh_module_safety_note">Bash stays installed as a recovery option. Android Failsafe remains /system/bin/sh and is not changed. Existing sessions keep their current shell; open a new session to apply a default change.</string>
+    <string name="zsh_module_install_both">Install in both</string>
+    <string name="zsh_module_restore_bash">Make Bash the default</string>
+    <string name="zsh_module_close">Close</string>
+    <string name="zsh_module_install_progress">Preparing the Zsh module…</string>
+    <string name="zsh_module_restore_progress">Restoring Bash defaults…</string>
+    <string name="zsh_module_install_success">Zsh is ready in both environments. Open new sessions to use it.</string>
+    <string name="zsh_module_restore_success">Bash is now the default where installed. Zsh, plugins, and user files were kept.</string>
+    <string name="zsh_module_ubuntu_required_title">Ubuntu is not ready</string>
+    <string name="zsh_module_ubuntu_required_message">The module installs in both environments. Prepare the bundled Ubuntu rootfs first; a valid existing rootfs is reused and is not re-extracted.</string>
+    <string name="zsh_module_prepare_ubuntu">Prepare Ubuntu</string>
+    <string name="zsh_module_install_error_title">Zsh installation incomplete</string>
+    <string name="zsh_module_restore_error_title">Bash could not be restored everywhere</string>
+    <string name="zsh_module_operation_failed">The operation did not finish. Check network access and try again.</string>
+
     <!-- Project workspaces and grouped terminal sessions -->
     <string name="premium_open_workspaces">Open project workspaces</string>
     <string name="premium_palette_workspaces">Project workspaces</string>

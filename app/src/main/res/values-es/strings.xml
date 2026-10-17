@@ -174,6 +174,36 @@
     <string name="ubuntu_setup_diagnostics_label">Diagnóstico de instalación de Ubuntu</string>
     <string name="ubuntu_setup_diagnostics_copied">Diagnóstico copiado</string>
 
+    <!-- Módulo opcional de shell Zsh -->
+    <string name="zsh_module_preference_title">Shell Zsh</string>
+    <string name="zsh_module_preference_summary">Instala Zsh y el tema/complementos solicitados en Termux y Ubuntu; conserva Bash como alternativa.</string>
+    <string name="zsh_module_dialog_title">Módulo de shell Zsh</string>
+    <string name="zsh_module_dialog_intro">Al instalarlo, Zsh será el shell predeterminado de las nuevas sesiones anfitrionas de Termux y de Ubuntu. Las fuentes del tema y los complementos se descargan al instalar.</string>
+    <string name="zsh_module_termux_status">Termux anfitrión: %1$s</string>
+    <string name="zsh_module_ubuntu_status">Ubuntu: %1$s</string>
+    <string name="zsh_module_theme_row">Tema · powerlevel10k — Termux: %1$s · Ubuntu: %2$s</string>
+    <string name="zsh_module_plugin_row">Complemento · %1$s — Termux: %2$s · Ubuntu: %3$s</string>
+    <string name="zsh_module_installed">instalado</string>
+    <string name="zsh_module_missing">falta</string>
+    <string name="zsh_module_state_zsh_default">Zsh instalado · predeterminado para sesiones nuevas</string>
+    <string name="zsh_module_state_installed_not_default">Zsh instalado · Bash sigue siendo el predeterminado</string>
+    <string name="zsh_module_state_not_installed">Zsh no está instalado</string>
+    <string name="zsh_module_ubuntu_not_ready">Ubuntu no está listo</string>
+    <string name="zsh_module_safety_note">Bash sigue instalado como opción de recuperación. Failsafe de Android continúa usando /system/bin/sh y no se modifica. Las sesiones abiertas mantienen su shell actual; abre una sesión nueva para aplicar el cambio.</string>
+    <string name="zsh_module_install_both">Instalar en ambos</string>
+    <string name="zsh_module_restore_bash">Usar Bash como predeterminado</string>
+    <string name="zsh_module_close">Cerrar</string>
+    <string name="zsh_module_install_progress">Preparando el módulo Zsh…</string>
+    <string name="zsh_module_restore_progress">Restaurando los valores predeterminados de Bash…</string>
+    <string name="zsh_module_install_success">Zsh está listo en ambos entornos. Abre sesiones nuevas para usarlo.</string>
+    <string name="zsh_module_restore_success">Bash vuelve a ser el predeterminado donde está instalado. Se conservaron Zsh, los complementos y los archivos personales.</string>
+    <string name="zsh_module_ubuntu_required_title">Ubuntu no está listo</string>
+    <string name="zsh_module_ubuntu_required_message">El módulo se instala en ambos entornos. Primero prepara el rootfs de Ubuntu incluido; si ya es válido, se reutiliza sin extraerlo otra vez.</string>
+    <string name="zsh_module_prepare_ubuntu">Preparar Ubuntu</string>
+    <string name="zsh_module_install_error_title">La instalación de Zsh quedó incompleta</string>
+    <string name="zsh_module_restore_error_title">No se pudo restaurar Bash en todos los entornos</string>
+    <string name="zsh_module_operation_failed">La operación no terminó. Comprueba la conexión de red e inténtalo de nuevo.</string>
+
     <!-- Espacios de trabajo y sesiones de terminal agrupadas por proyecto -->
     <string name="premium_open_workspaces">Abrir espacios de trabajo</string>
     <string name="premium_palette_workspaces">Espacios de trabajo</string>
