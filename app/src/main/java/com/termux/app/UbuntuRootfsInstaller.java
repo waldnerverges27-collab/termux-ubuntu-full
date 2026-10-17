@@ -41,7 +41,7 @@ public final class UbuntuRootfsInstaller {
         + "/var/lib/proot-distro/installed-rootfs/ubuntu-rootfs";
     private static final String PROOT_DEST = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/proot";
     private static final String LOGIN_SCRIPT = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login";
-    private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=2";
+    private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=3";
     private static final String TERMUX_BIN = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH;
     private static final String TERMUX_LIB = TermuxConstants.TERMUX_LIB_PREFIX_DIR_PATH;
     private static final String PROOT_LIBTALLOC_ASSET = "proot-libs/arm64-v8a/libtalloc.so.2";
@@ -543,21 +543,14 @@ public final class UbuntuRootfsInstaller {
         }
     }
 
-    private static void createLoginScript() throws IOException {
-        File script = new File(LOGIN_SCRIPT);
-        File parent = script.getParentFile();
-        if (parent != null && !parent.isDirectory() && !parent.mkdirs())
-            throw new IOException("Could not create the Termux bin directory.");
-
-        File sharedMountPoint = new File(ROOTFS_DIR, "mnt/shared");
-        if (!sharedMountPoint.isDirectory() && !sharedMountPoint.mkdirs())
-            throw new IOException("Could not create the Ubuntu shared-storage mount point.");
-
-        String content = "#!/data/data/com.termux/files/usr/bin/sh\n"
+    static String buildLoginScriptContent() {
+        return "#!/data/data/com.termux/files/usr/bin/sh\n"
             + LOGIN_SCRIPT_VERSION_MARKER + "\n"
-            + "unset LD_PRELOAD\n"
-            + "set -- --kill-on-exit --link2symlink -0 -E LD_LIBRARY_PATH= "
-            + "-r " + ROOTFS_DIR + " -b /dev -b /proc -b /sys -w /\n"
+            // PRoot's Termux build has no -E option. The host environment is cleared before
+            // proot starts; env -i below constructs a clean environment inside Ubuntu.
+            + "unset LD_PRELOAD LD_LIBRARY_PATH\n"
+            + "set -- --kill-on-exit --link2symlink -0 -r " + ROOTFS_DIR
+            + " -b /dev -b /proc -b /sys -w /\n"
             + "if [ -d \"" + TERMUX_SHARED_STORAGE_DIR + "\" ]; then\n"
             + "  set -- \"$@\" -b \"" + TERMUX_SHARED_STORAGE_DIR + ":" + UBUNTU_SHARED_STORAGE_DIR + "\"\n"
             + "fi\n"
@@ -577,6 +570,19 @@ public final class UbuntuRootfsInstaller {
             + "if [ -n \"$TERMUX_UBUNTU_ENV_FILE\" ] && [ -r \"$TERMUX_UBUNTU_ENV_FILE\" ]; then . \"$TERMUX_UBUNTU_ENV_FILE\"; fi; "
             + "if [ -n \"$TERMUX_UBUNTU_WORKDIR\" ] && [ -d \"$TERMUX_UBUNTU_WORKDIR\" ]; then cd -- \"$TERMUX_UBUNTU_WORKDIR\"; else cd \"$HOME\"; fi; "
             + "exec /bin/bash -i'\n";
+    }
+
+    private static void createLoginScript() throws IOException {
+        File script = new File(LOGIN_SCRIPT);
+        File parent = script.getParentFile();
+        if (parent != null && !parent.isDirectory() && !parent.mkdirs())
+            throw new IOException("Could not create the Termux bin directory.");
+
+        File sharedMountPoint = new File(ROOTFS_DIR, "mnt/shared");
+        if (!sharedMountPoint.isDirectory() && !sharedMountPoint.mkdirs())
+            throw new IOException("Could not create the Ubuntu shared-storage mount point.");
+
+        String content = buildLoginScriptContent();
         File temporary = new File(parent, "login.tmp-" + UUID.randomUUID());
         try (FileOutputStream output = new FileOutputStream(temporary)) {
             output.write(content.getBytes(StandardCharsets.UTF_8));
