@@ -44,6 +44,10 @@ public final class UbuntuRootfsInstaller {
     private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=2";
     private static final String TERMUX_BIN = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH;
     private static final String TERMUX_LIB = TermuxConstants.TERMUX_LIB_PREFIX_DIR_PATH;
+    private static final String PROOT_LIBTALLOC_ASSET = "proot-libs/arm64-v8a/libtalloc.so.2";
+    private static final String PROOT_ANDROID_SHMEM_ASSET = "proot-libs/arm64-v8a/libandroid-shmem.so";
+    private static final String PROOT_LIBTALLOC = TERMUX_LIB + "/libtalloc.so.2";
+    private static final String PROOT_ANDROID_SHMEM = TERMUX_LIB + "/libandroid-shmem.so";
     private static final String TERMUX_SHARED_STORAGE_DIR = TermuxConstants.TERMUX_HOME_DIR_PATH + "/storage/shared";
     private static final String UBUNTU_SHARED_STORAGE_DIR = "/mnt/shared";
     private static final int DIAGNOSTIC_TAIL_BYTES = 4096;
@@ -105,7 +109,13 @@ public final class UbuntuRootfsInstaller {
             && isValidArm64Rootfs(new File(ROOTFS_DIR))
             && isArm64Elf(new File(PROOT_DEST))
             && new File(PROOT_DEST).canExecute()
+            && hasArm64ProotRuntimeLibraries()
             && hasCurrentLoginScript(new File(LOGIN_SCRIPT));
+    }
+
+    private static boolean hasArm64ProotRuntimeLibraries() {
+        return isArm64Elf(new File(PROOT_LIBTALLOC))
+            && isArm64Elf(new File(PROOT_ANDROID_SHMEM));
     }
 
     private static void showLowStorageWarning(Activity activity, UbuntuRootfsManifest manifest,
@@ -497,6 +507,9 @@ public final class UbuntuRootfsInstaller {
     }
 
     private static void installProot(Context context) throws Exception {
+        ensureProotLibrary(context, PROOT_LIBTALLOC_ASSET, PROOT_LIBTALLOC, "libtalloc.so.2");
+        ensureProotLibrary(context, PROOT_ANDROID_SHMEM_ASSET, PROOT_ANDROID_SHMEM, "libandroid-shmem.so");
+
         File proot = new File(PROOT_DEST);
         if (!isArm64Elf(proot))
             copyAssetToFile(context, "proot-aarch64", proot);
@@ -504,6 +517,17 @@ public final class UbuntuRootfsInstaller {
             throw new IOException("Could not make the ARM64 PRoot binary executable.");
         if (!isArm64Elf(proot))
             throw new IOException("The bundled PRoot asset is not a valid AArch64 ELF binary.");
+    }
+
+    // A fresh Termux prefix does not necessarily contain packages required by the bundled PRoot ELF.
+    // Keep its DT_NEEDED libraries beside the binary so the Android linker can resolve RUNPATH.
+    private static void ensureProotLibrary(Context context, String assetName, String destinationPath,
+                                          String libraryName) throws Exception {
+        File library = new File(destinationPath);
+        if (!isArm64Elf(library))
+            copyAssetToFile(context, assetName, library);
+        if (!isArm64Elf(library))
+            throw new IOException("Bundled PRoot dependency " + libraryName + " is not a valid AArch64 ELF library.");
     }
 
     private static void copyAssetToFile(Context context, String assetName, File destination) throws Exception {
