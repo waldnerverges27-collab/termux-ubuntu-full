@@ -41,7 +41,7 @@ public final class UbuntuRootfsInstaller {
         + "/var/lib/proot-distro/installed-rootfs/ubuntu-rootfs";
     private static final String PROOT_DEST = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/proot";
     private static final String LOGIN_SCRIPT = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login";
-    private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=3";
+    private static final String LOGIN_SCRIPT_VERSION_MARKER = "# TERMUX_UBUNTU_LOGIN_VERSION=4";
     private static final String TERMUX_BIN = TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH;
     private static final String TERMUX_LIB = TermuxConstants.TERMUX_LIB_PREFIX_DIR_PATH;
     private static final String PROOT_LIBTALLOC_ASSET = "proot-libs/arm64-v8a/libtalloc.so.2";
@@ -546,8 +546,8 @@ public final class UbuntuRootfsInstaller {
     static String buildLoginScriptContent() {
         return "#!/data/data/com.termux/files/usr/bin/sh\n"
             + LOGIN_SCRIPT_VERSION_MARKER + "\n"
-            // PRoot's Termux build has no -E option. The host environment is cleared before
-            // proot starts; env -i below constructs a clean environment inside Ubuntu.
+            // Keep host linker variables away from PRoot. The guest environment is rebuilt with
+            // Bash's exec -c, avoiding a dependency on /usr/bin/env inside the Ubuntu rootfs.
             + "unset LD_PRELOAD LD_LIBRARY_PATH\n"
             + "set -- --kill-on-exit --link2symlink -0 -r " + ROOTFS_DIR
             + " -b /dev -b /proc -b /sys -w /\n"
@@ -560,16 +560,21 @@ public final class UbuntuRootfsInstaller {
             + "  set -- \"$@\" -b \"$TERMUX_UBUNTU_ENV_FILE:/tmp/termux-workspace-env\"\n"
             + "  WORKSPACE_ENV=/tmp/termux-workspace-env\n"
             + "fi\n"
-            + "exec /data/data/com.termux/files/usr/bin/proot \"$@\" /usr/bin/env -i "
-            + "HOME=/root "
-            + "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "
-            + "TERM=\"${TERM:-xterm-256color}\" "
-            + "LANG=C.UTF-8 TMPDIR=/tmp "
-            + "TERMUX_UBUNTU_WORKDIR=\"$WORKDIR\" TERMUX_UBUNTU_ENV_FILE=\"$WORKSPACE_ENV\" "
-            + "/bin/bash -l -c '"
+            + "BOOTSTRAP=$(cat <<'TERMUX_UBUNTU_BOOTSTRAP'\n"
+            + "export HOME=/root\n"
+            + "export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n"
+            + "export TERM=\"$1\"\n"
+            + "export LANG=C.UTF-8 TMPDIR=/tmp\n"
+            + "export TERMUX_UBUNTU_WORKDIR=\"$2\" TERMUX_UBUNTU_ENV_FILE=\"$3\"\n"
+            + "exec /bin/bash -l -c '"
             + "if [ -n \"$TERMUX_UBUNTU_ENV_FILE\" ] && [ -r \"$TERMUX_UBUNTU_ENV_FILE\" ]; then . \"$TERMUX_UBUNTU_ENV_FILE\"; fi; "
             + "if [ -n \"$TERMUX_UBUNTU_WORKDIR\" ] && [ -d \"$TERMUX_UBUNTU_WORKDIR\" ]; then cd -- \"$TERMUX_UBUNTU_WORKDIR\"; else cd \"$HOME\"; fi; "
-            + "exec /bin/bash -i'\n";
+            + "exec /bin/bash -i'\n"
+            + "TERMUX_UBUNTU_BOOTSTRAP\n"
+            + ")\n"
+            + "exec /data/data/com.termux/files/usr/bin/proot \"$@\" /bin/bash --noprofile --norc -c "
+            + "'exec -c /bin/bash --noprofile --norc -c \"$1\" termux-ubuntu-bootstrap \"$2\" \"$3\" \"$4\"' "
+            + "termux-proot-bootstrap \"$BOOTSTRAP\" \"${TERM:-xterm-256color}\" \"$WORKDIR\" \"$WORKSPACE_ENV\"\n";
     }
 
     private static void createLoginScript() throws IOException {
