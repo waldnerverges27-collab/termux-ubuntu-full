@@ -608,8 +608,12 @@ public final class TermuxService extends Service implements AppShell.AppShellCli
         // If the execution command was started for a plugin, only then will the stdout be set
         // Otherwise if command was manually started by the user like by adding a new terminal session,
         // then no need to set stdout
+        // Clear loader-injection variables before the login script's shebang interpreter is exec'd.
+        // Clearing them only from inside the script is too late if LD_PRELOAD is already mapped.
+        HashMap<String, String> sessionEnvironment = UbuntuRootfsInstaller.getSessionEnvironmentOverrides(
+            executionCommand.executable, additionalEnvironment);
         TermuxSession newTermuxSession = TermuxSession.execute(this, executionCommand, getTermuxTerminalSessionClient(),
-            this, new TermuxShellEnvironment(), additionalEnvironment, executionCommand.isPluginExecutionCommand);
+            this, new TermuxShellEnvironment(), sessionEnvironment, executionCommand.isPluginExecutionCommand);
         if (newTermuxSession == null) {
             Logger.logError(LOG_TAG, "Failed to execute new TermuxSession command for:\n" + executionCommand.getCommandIdAndLabelLogString());
             // If the execution command was started for a plugin, then process the error

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -61,6 +62,25 @@ public final class UbuntuRootfsInstaller {
 
     public static String getLoginScriptPath() {
         return LOGIN_SCRIPT;
+    }
+
+    /**
+     * Prepare host process overrides for Termux sessions that execute the generated login script.
+     * LD_PRELOAD must be cleared before the shebang interpreter starts; unsetting it inside the
+     * script is too late if the Termux execve shim was already preloaded into that interpreter.
+     */
+    static HashMap<String, String> getSessionEnvironmentOverrides(String executablePath,
+                                                                   HashMap<String, String> additionalEnvironment) {
+        boolean isUbuntuLogin = LOGIN_SCRIPT.equals(executablePath);
+        if (!isUbuntuLogin && additionalEnvironment == null) return null;
+
+        HashMap<String, String> environment = new HashMap<>();
+        if (additionalEnvironment != null) environment.putAll(additionalEnvironment);
+        if (isUbuntuLogin) {
+            environment.put("LD_PRELOAD", "");
+            environment.put("LD_LIBRARY_PATH", "");
+        }
+        return environment;
     }
 
     public static void installIfNeeded(final Activity activity, final Runnable whenDone) {

@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 
 public class UbuntuRootfsInstallerTest {
 
@@ -25,6 +26,26 @@ public class UbuntuRootfsInstallerTest {
         Assert.assertTrue(script.contains("export HOME=/root\n"));
         Assert.assertTrue(script.contains("TERMUX_UBUNTU_WORKDIR=\"$2\""));
         Assert.assertTrue(script.contains("exec /bin/bash -i"));
+    }
+
+    @Test
+    public void ubuntuSessionClearsPreloadBeforeShebangInterpreterStarts() {
+        HashMap<String, String> additionalEnvironment = new HashMap<>();
+        additionalEnvironment.put("TERMUX_UBUNTU_WORKDIR", "/root/project");
+
+        HashMap<String, String> environment = UbuntuRootfsInstaller.getSessionEnvironmentOverrides(
+            UbuntuRootfsInstaller.getLoginScriptPath(), additionalEnvironment);
+
+        Assert.assertEquals("", environment.get("LD_PRELOAD"));
+        Assert.assertEquals("", environment.get("LD_LIBRARY_PATH"));
+        Assert.assertEquals("/root/project", environment.get("TERMUX_UBUNTU_WORKDIR"));
+        Assert.assertFalse("Do not mutate workspace-specific values supplied by the caller.",
+            additionalEnvironment.containsKey("LD_PRELOAD"));
+    }
+
+    @Test
+    public void unrelatedSessionDoesNotReceiveUbuntuEnvironmentOverrides() {
+        Assert.assertNull(UbuntuRootfsInstaller.getSessionEnvironmentOverrides("/system/bin/sh", null));
     }
 
     @Test
