@@ -1,0 +1,19 @@
+PRoot runtime assets
+
+This application bundles the PRoot executable and loader helpers from the
+Termux PRoot package, version 5.1.107.96 (AArch64 package).
+
+Upstream source: https://github.com/termux/proot
+Package repository: https://packages.termux.dev/apt/termux-main/
+
+PRoot is Copyright (C) 2015 STMicroelectronics and contributors, and is
+licensed under the GNU General Public License, version 2 or (at your option)
+any later version. The complete license text is in GPL-2.0.txt.
+
+The bundled PRoot loader helper assets are:
+- proot-loader-aarch64
+- proot-loader-arm32
+
+SHA-256:
+cbdef0e652c2b78af25d867e1719fdebbb0915e25aae2dd35b3b5c1835f6b551  proot-loader-aarch64
+c429996fee730e1a4fe12625b22dab5a5bc2847a4cae274d36fd4a19cd8299a8  proot-loader-arm32

@@ -14,6 +14,17 @@ import java.util.HashMap;
 public class UbuntuRootfsInstallerTest {
 
     @Test
+    public void bundledProotLoaderHelpersHavePinnedArchitecturesAndChecksums() {
+        File loader = new File("src/main/assets/proot-loader-aarch64");
+        File loader32 = new File("src/main/assets/proot-loader-arm32");
+
+        Assert.assertTrue("The bundled PRoot helper must be the pinned AArch64 ELF.",
+            UbuntuRootfsInstaller.isArm64ProotLoaderValid(loader));
+        Assert.assertTrue("The bundled 32-bit PRoot helper must be the pinned ARM ELF.",
+            UbuntuRootfsInstaller.isArm32ProotLoaderValid(loader32));
+    }
+
+    @Test
     public void generatedLoginScriptUsesSupportedProotArgumentsAndBashBootstrap() {
         String script = UbuntuRootfsInstaller.buildLoginScriptContent();
 

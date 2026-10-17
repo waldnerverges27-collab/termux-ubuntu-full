@@ -49,6 +49,15 @@ public final class UbuntuRootfsInstaller {
     private static final String PROOT_ANDROID_SHMEM_ASSET = "proot-libs/arm64-v8a/libandroid-shmem.so";
     private static final String PROOT_LIBTALLOC = TERMUX_LIB + "/libtalloc.so.2";
     private static final String PROOT_ANDROID_SHMEM = TERMUX_LIB + "/libandroid-shmem.so";
+    private static final String PROOT_LOADER_ASSET = "proot-loader-aarch64";
+    private static final String PROOT_LOADER32_ASSET = "proot-loader-arm32";
+    private static final String PROOT_LIBEXEC_DIR = TermuxConstants.TERMUX_PREFIX_DIR_PATH + "/libexec/proot";
+    private static final String PROOT_LOADER = PROOT_LIBEXEC_DIR + "/loader";
+    private static final String PROOT_LOADER32 = PROOT_LIBEXEC_DIR + "/loader32";
+    private static final String PROOT_LOADER_SHA256 =
+        "cbdef0e652c2b78af25d867e1719fdebbb0915e25aae2dd35b3b5c1835f6b551";
+    private static final String PROOT_LOADER32_SHA256 =
+        "c429996fee730e1a4fe12625b22dab5a5bc2847a4cae274d36fd4a19cd8299a8";
     private static final String TERMUX_SHARED_STORAGE_DIR = TermuxConstants.TERMUX_HOME_DIR_PATH + "/storage/shared";
     private static final String UBUNTU_SHARED_STORAGE_DIR = "/mnt/shared";
     private static final int DIAGNOSTIC_TAIL_BYTES = 4096;
@@ -130,12 +139,20 @@ public final class UbuntuRootfsInstaller {
             && isArm64Elf(new File(PROOT_DEST))
             && new File(PROOT_DEST).canExecute()
             && hasArm64ProotRuntimeLibraries()
+            && hasProotLoaderHelpers()
             && hasCurrentLoginScript(new File(LOGIN_SCRIPT));
     }
 
     private static boolean hasArm64ProotRuntimeLibraries() {
         return isArm64Elf(new File(PROOT_LIBTALLOC))
             && isArm64Elf(new File(PROOT_ANDROID_SHMEM));
+    }
+
+    private static boolean hasProotLoaderHelpers() {
+        File loader = new File(PROOT_LOADER);
+        File loader32 = new File(PROOT_LOADER32);
+        return isArm64ProotLoaderValid(loader) && loader.canExecute()
+            && isArm32ProotLoaderValid(loader32) && loader32.canExecute();
     }
 
     private static void showLowStorageWarning(Activity activity, UbuntuRootfsManifest manifest,
@@ -529,6 +546,8 @@ public final class UbuntuRootfsInstaller {
     private static void installProot(Context context) throws Exception {
         ensureProotLibrary(context, PROOT_LIBTALLOC_ASSET, PROOT_LIBTALLOC, "libtalloc.so.2");
         ensureProotLibrary(context, PROOT_ANDROID_SHMEM_ASSET, PROOT_ANDROID_SHMEM, "libandroid-shmem.so");
+        ensureProotLoader(context, PROOT_LOADER_ASSET, PROOT_LOADER, true);
+        ensureProotLoader(context, PROOT_LOADER32_ASSET, PROOT_LOADER32, false);
 
         File proot = new File(PROOT_DEST);
         if (!isArm64Elf(proot))
@@ -548,6 +567,19 @@ public final class UbuntuRootfsInstaller {
             copyAssetToFile(context, assetName, library);
         if (!isArm64Elf(library))
             throw new IOException("Bundled PRoot dependency " + libraryName + " is not a valid AArch64 ELF library.");
+    }
+
+    private static void ensureProotLoader(Context context, String assetName, String destinationPath,
+                                          boolean is64Bit) throws Exception {
+        File loader = new File(destinationPath);
+        boolean valid = is64Bit ? isArm64ProotLoaderValid(loader) : isArm32ProotLoaderValid(loader);
+        if (!valid) copyAssetToFile(context, assetName, loader);
+        if (!loader.setExecutable(true, false) || !loader.canExecute())
+            throw new IOException("Could not make the PRoot loader executable: " + loader.getAbsolutePath());
+        valid = is64Bit ? isArm64ProotLoaderValid(loader) : isArm32ProotLoaderValid(loader);
+        if (!valid)
+            throw new IOException("Bundled PRoot loader is invalid or failed SHA-256 verification: "
+                + loader.getAbsolutePath());
     }
 
     private static void copyAssetToFile(Context context, String assetName, File destination) throws Exception {
@@ -661,7 +693,7 @@ public final class UbuntuRootfsInstaller {
         return false;
     }
 
-    private static boolean isArm64Elf(File file) {
+    static boolean isArm64Elf(File file) {
         if (!file.isFile()) return false;
         try (InputStream input = new FileInputStream(file)) {
             byte[] header = new byte[20];
@@ -674,6 +706,45 @@ public final class UbuntuRootfsInstaller {
             return header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F'
                 && header[4] == 2 && header[5] == 1
                 && (header[18] & 0xff) == 183 && header[19] == 0;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    static boolean isArm32Elf(File file) {
+        if (!file.isFile()) return false;
+        try (InputStream input = new FileInputStream(file)) {
+            byte[] header = new byte[20];
+            int offset = 0;
+            while (offset < header.length) {
+                int count = input.read(header, offset, header.length - offset);
+                if (count < 0) return false;
+                offset += count;
+            }
+            return header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F'
+                && header[4] == 1 && header[5] == 1
+                && (header[18] & 0xff) == 40 && header[19] == 0;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    static boolean isArm64ProotLoaderValid(File file) {
+        return isArm64Elf(file) && hasExpectedSha256(file, PROOT_LOADER_SHA256);
+    }
+
+    static boolean isArm32ProotLoaderValid(File file) {
+        return isArm32Elf(file) && hasExpectedSha256(file, PROOT_LOADER32_SHA256);
+    }
+
+    private static boolean hasExpectedSha256(File file, String expectedHash) {
+        if (!file.isFile()) return false;
+        MessageDigest digest = newSha256Digest();
+        try (InputStream input = new FileInputStream(file)) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
+            return expectedHash.equals(toHex(digest.digest()));
         } catch (IOException e) {
             return false;
         }

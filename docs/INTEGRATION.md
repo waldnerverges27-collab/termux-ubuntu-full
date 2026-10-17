@@ -16,6 +16,11 @@ marcador y empaquetan el rootfs. Tras generarlo, colócalo en
 `app/src/main/assets/ubuntu-rootfs.tar.xz` para compilar; Gradle lo almacena sin
 aplicarle una segunda compresión. El APK resultante sí incluye el archivo.
 
+La app también incluye los helpers ELF externos del paquete PRoot 5.1.107.96.
+Al iniciar Ubuntu, el instalador verifica sus hashes y los instala bajo
+`$PREFIX/libexec/proot/`; si faltan o no coinciden, repara esos archivos sin
+borrar ni volver a extraer un rootfs válido.
+
 ## Controles del terminal
 
 - La barra superior abre sesiones, crea una sesión, abre la paleta de acciones,
