@@ -30,6 +30,7 @@ import java.util.List;
 public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession> implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener {
 
     final TermuxActivity mActivity;
+    private final TermuxWorkspaceManager workspaceManager;
 
     final StyleSpan boldSpan = new StyleSpan(Typeface.BOLD);
     final StyleSpan italicSpan = new StyleSpan(Typeface.ITALIC);
@@ -37,6 +38,12 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
     public TermuxSessionsListViewController(TermuxActivity activity, List<TermuxSession> sessionList) {
         super(activity.getApplicationContext(), R.layout.item_terminal_sessions_list, sessionList);
         this.mActivity = activity;
+        this.workspaceManager = new TermuxWorkspaceManager(activity);
+    }
+
+    public void notifyWorkspaceBindingsUpdated() {
+        workspaceManager.invalidateCache();
+        notifyDataSetChanged();
     }
 
     @SuppressLint("SetTextI18n")
@@ -67,9 +74,11 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
 
         String name = sessionAtRow.mSessionName;
         String sessionTitle = sessionAtRow.getTitle();
+        TermuxWorkspaceManager.Workspace workspace = workspaceManager.getWorkspaceForSession(sessionAtRow.mHandle);
 
         String numberPart = "[" + (position + 1) + "] ";
-        String sessionNamePart = (TextUtils.isEmpty(name) ? "" : name);
+        String workspacePart = workspace == null ? "" : workspace.name + " · ";
+        String sessionNamePart = workspacePart + (TextUtils.isEmpty(name) ? "" : name);
         String sessionTitlePart = (TextUtils.isEmpty(sessionTitle) ? "" : ((sessionNamePart.isEmpty() ? "" : "\n") + sessionTitle));
 
         String fullSessionTitle = numberPart + sessionNamePart + sessionTitlePart;

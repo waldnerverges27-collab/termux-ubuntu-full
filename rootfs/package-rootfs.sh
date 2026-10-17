@@ -59,6 +59,7 @@ if ! grep -Fxq 'ARCH=arm64' <<< "$ARCHIVE_MARKER"; then
   echo "Packaged archive failed its ARM64 marker check." >&2
   exit 1
 fi
+bash "$(dirname -- "${BASH_SOURCE[0]}")/generate-rootfs-info.sh" "$TARBALL"
 printf 'Rootfs archive: %s (%s)\n' "$TARBALL" "$(stat -c '%s bytes' "$TARBALL")"
 printf 'Rootfs SHA-256: %s\n' "$(awk '{print $1}' "$TARBALL.sha256")"
 printf 'Expanded rootfs size: %s\n' "$(sudo du -shx "$ROOTFS" | awk '{print $1}')"

@@ -77,6 +77,10 @@ public final class TerminalView extends View {
     private int mMouseScrollStartX = -1, mMouseScrollStartY = -1;
     /** Keep track of the time when a touch event leading to sending mouse scroll events started. */
     private long mMouseStartDownTime = -1;
+    /** Pointer coordinates used to turn a physical mouse drag into terminal text selection. */
+    private float mMouseDownX, mMouseDownY;
+    private boolean mMouseDragPending, mMouseDragSelecting;
+    private int mLastMouseButton = MotionEvent.BUTTON_PRIMARY;
 
     final Scroller mScroller;
 
@@ -545,11 +549,13 @@ public final class TerminalView extends View {
      * @return Array with the column and row.
      */
     public int[] getColumnAndRow(MotionEvent event, boolean relativeToScroll) {
-        int column = (int) (event.getX() / mRenderer.mFontWidth);
-        int row = (int) ((event.getY() - mRenderer.mFontLineSpacingAndAscent) / mRenderer.mFontLineSpacing);
-        if (relativeToScroll) {
-            row += mTopRow;
-        }
+        return getColumnAndRow(event.getX(), event.getY(), relativeToScroll);
+    }
+
+    public int[] getColumnAndRow(float x, float y, boolean relativeToScroll) {
+        int column = (int) (x / mRenderer.mFontWidth);
+        int row = (int) ((y - mRenderer.mFontLineSpacingAndAscent) / mRenderer.mFontLineSpacing);
+        if (relativeToScroll) row += mTopRow;
         return new int[] { column, row };
     }
 
@@ -593,12 +599,13 @@ public final class TerminalView extends View {
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (mEmulator != null && event.isFromSource(InputDevice.SOURCE_MOUSE) && event.getAction() == MotionEvent.ACTION_SCROLL) {
-            // Handle mouse wheel scrolling.
-            boolean up = event.getAxisValue(MotionEvent.AXIS_VSCROLL) > 0.0f;
-            doScroll(event, up ? -3 : 3);
+            float verticalScroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
+            if (verticalScroll == 0.0f) return super.onGenericMotionEvent(event);
+            int rows = Math.max(1, Math.min(12, Math.round(Math.abs(verticalScroll) * 3.0f)));
+            doScroll(event, verticalScroll > 0.0f ? -rows : rows);
             return true;
         }
-        return false;
+        return super.onGenericMotionEvent(event);
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -606,41 +613,171 @@ public final class TerminalView extends View {
     @TargetApi(23)
     public boolean onTouchEvent(MotionEvent event) {
         if (mEmulator == null) return true;
-        final int action = event.getAction();
+        if (event.isFromSource(InputDevice.SOURCE_MOUSE))
+            return handleMouseEvent(event, event.getActionMasked());
 
         if (isSelectingText()) {
             updateFloatingToolbarVisibility(event);
             mGestureRecognizer.onTouchEvent(event);
             return true;
-        } else if (event.isFromSource(InputDevice.SOURCE_MOUSE)) {
-            if (event.isButtonPressed(MotionEvent.BUTTON_SECONDARY)) {
-                if (action == MotionEvent.ACTION_DOWN) showContextMenu();
-                return true;
-            } else if (event.isButtonPressed(MotionEvent.BUTTON_TERTIARY)) {
-                ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clipData = clipboardManager.getPrimaryClip();
-                if (clipData != null) {
-                    ClipData.Item clipItem = clipData.getItemAt(0);
-                    if (clipItem != null) {
-                        CharSequence text = clipItem.coerceToText(getContext());
-                        if (!TextUtils.isEmpty(text)) mEmulator.paste(text.toString());
-                    }
-                }
-            } else if (mEmulator.isMouseTrackingActive()) { // BUTTON_PRIMARY.
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                    case MotionEvent.ACTION_UP:
-                        sendMouseEventCode(event, TerminalEmulator.MOUSE_LEFT_BUTTON, event.getAction() == MotionEvent.ACTION_DOWN);
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        sendMouseEventCode(event, TerminalEmulator.MOUSE_LEFT_BUTTON_MOVED, true);
-                        break;
-                }
-            }
         }
 
         mGestureRecognizer.onTouchEvent(event);
         return true;
+    }
+
+    @TargetApi(23)
+    private boolean handleMouseEvent(MotionEvent event, int action) {
+        switch (action) {
+            case MotionEvent.ACTION_DOWN: {
+                requestFocus();
+                int button = getPressedMouseButton(event.getButtonState());
+                if (button == 0) button = MotionEvent.BUTTON_PRIMARY;
+                return handleMouseButton(event, button, true);
+            }
+            case MotionEvent.ACTION_BUTTON_PRESS:
+                return handleMouseButton(event, event.getActionButton(), true);
+            case MotionEvent.ACTION_BUTTON_RELEASE:
+                return handleMouseButton(event, event.getActionButton(), false);
+            case MotionEvent.ACTION_MOVE: {
+                int buttonState = event.getButtonState();
+                if (mMouseDragPending || mMouseDragSelecting) {
+                    if (mMouseDragPending && (buttonState & MotionEvent.BUTTON_PRIMARY) == 0) {
+                        mMouseDragPending = false;
+                    } else {
+                        float dx = event.getX() - mMouseDownX;
+                        float dy = event.getY() - mMouseDownY;
+                        if (mMouseDragPending && Math.hypot(dx, dy) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
+                            mMouseDragPending = false;
+                            mMouseDragSelecting = true;
+                            startMouseTextSelection(mMouseDownX, mMouseDownY);
+                        }
+                        if (mMouseDragSelecting) updateMouseTextSelection(event.getX(), event.getY());
+                        return true;
+                    }
+                }
+                if (mEmulator.isMouseTrackingActive()) {
+                    int button = getPressedMouseButton(buttonState);
+                    if (button != 0) {
+                        int terminalButton = getTerminalMouseButton(button);
+                        sendMouseEventCode(event, TerminalEmulator.MOUSE_BUTTON_MOVED + terminalButton, true);
+                    }
+                }
+                return true;
+            }
+            case MotionEvent.ACTION_UP: {
+                if (mMouseDragSelecting) {
+                    updateMouseTextSelection(event.getX(), event.getY());
+                    mMouseDragSelecting = false;
+                    mMouseDragPending = false;
+                    return true;
+                }
+                if (mMouseDragPending) {
+                    mMouseDragPending = false;
+                    return true;
+                }
+                return handleMouseButton(event, mLastMouseButton, false);
+            }
+            case MotionEvent.ACTION_CANCEL:
+                if (mEmulator.isMouseTrackingActive())
+                    sendMouseEventCode(event, getTerminalMouseButton(mLastMouseButton), false);
+                mMouseDragPending = false;
+                mMouseDragSelecting = false;
+                mLastMouseButton = MotionEvent.BUTTON_PRIMARY;
+                return true;
+            case MotionEvent.ACTION_SCROLL:
+                return onGenericMotionEvent(event);
+            default:
+                return true;
+        }
+    }
+
+    private boolean handleMouseButton(MotionEvent event, int androidButton, boolean pressed) {
+        if (androidButton != MotionEvent.BUTTON_PRIMARY && androidButton != MotionEvent.BUTTON_SECONDARY &&
+            androidButton != MotionEvent.BUTTON_TERTIARY) return true;
+
+        boolean mouseTracking = mEmulator.isMouseTrackingActive();
+        int terminalButton = getTerminalMouseButton(androidButton);
+        if (androidButton == MotionEvent.BUTTON_PRIMARY) {
+            requestFocus();
+            if (pressed && !mouseTracking) {
+                if (isSelectingText()) stopTextSelectionMode();
+                if (isSelectingText()) return true;
+                mMouseDownX = event.getX();
+                mMouseDownY = event.getY();
+                mMouseDragPending = true;
+                mMouseDragSelecting = false;
+                mLastMouseButton = androidButton;
+                return true;
+            }
+            if (!pressed && (mMouseDragSelecting || mMouseDragPending)) {
+                if (mMouseDragSelecting) updateMouseTextSelection(event.getX(), event.getY());
+                mMouseDragSelecting = false;
+                mMouseDragPending = false;
+                return true;
+            }
+        }
+
+        if (androidButton == MotionEvent.BUTTON_SECONDARY && !mouseTracking) {
+            if (pressed) showContextMenu();
+            return true;
+        }
+        if (androidButton == MotionEvent.BUTTON_TERTIARY && !mouseTracking) {
+            if (pressed) pasteClipboardText();
+            return true;
+        }
+
+        if (mouseTracking) sendMouseEventCode(event, terminalButton, pressed);
+        if (pressed) mLastMouseButton = androidButton;
+        else {
+            int remainingButton = getPressedMouseButton(event.getButtonState());
+            mLastMouseButton = remainingButton == 0 ? MotionEvent.BUTTON_PRIMARY : remainingButton;
+        }
+        return true;
+    }
+
+    private void pasteClipboardText() {
+        ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboardManager == null) return;
+        ClipData clipData = clipboardManager.getPrimaryClip();
+        if (clipData == null || clipData.getItemCount() == 0) return;
+        CharSequence text = clipData.getItemAt(0).coerceToText(getContext());
+        if (!TextUtils.isEmpty(text)) mEmulator.paste(text.toString());
+    }
+
+    private static int getPressedMouseButton(int buttonState) {
+        if ((buttonState & MotionEvent.BUTTON_PRIMARY) != 0) return MotionEvent.BUTTON_PRIMARY;
+        if ((buttonState & MotionEvent.BUTTON_TERTIARY) != 0) return MotionEvent.BUTTON_TERTIARY;
+        if ((buttonState & MotionEvent.BUTTON_SECONDARY) != 0) return MotionEvent.BUTTON_SECONDARY;
+        return 0;
+    }
+
+    private static int getTerminalMouseButton(int androidButton) {
+        if (androidButton == MotionEvent.BUTTON_TERTIARY) return TerminalEmulator.MOUSE_MIDDLE_BUTTON;
+        if (androidButton == MotionEvent.BUTTON_SECONDARY) return TerminalEmulator.MOUSE_RIGHT_BUTTON;
+        return TerminalEmulator.MOUSE_LEFT_BUTTON;
+    }
+
+    private void startMouseTextSelection(float x, float y) {
+        int[] columnAndRow = getColumnAndRow(x, y, true);
+        getTextSelectionCursorController().startMouseSelection(columnAndRow[0], columnAndRow[1]);
+        mClient.copyModeChanged(isSelectingText());
+        invalidate();
+    }
+
+    private void updateMouseTextSelection(float x, float y) {
+        if (!isSelectingText()) return;
+        int[] columnAndRow = getColumnAndRow(x, y, true);
+        getTextSelectionCursorController().updateMouseSelection(columnAndRow[0], columnAndRow[1]);
+        invalidate();
+    }
+
+    @Override
+    public boolean onHoverEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && event.isFromSource(InputDevice.SOURCE_MOUSE)) {
+            setPointerIcon(android.view.PointerIcon.getSystemIcon(getContext(), android.view.PointerIcon.TYPE_TEXT));
+        }
+        return super.onHoverEvent(event);
     }
 
     @Override

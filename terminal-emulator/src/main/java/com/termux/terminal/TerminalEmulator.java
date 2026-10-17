@@ -34,9 +34,13 @@ public final class TerminalEmulator {
     private static final boolean LOG_ESCAPE_SEQUENCES = false;
 
     public static final int MOUSE_LEFT_BUTTON = 0;
+    public static final int MOUSE_MIDDLE_BUTTON = 1;
+    public static final int MOUSE_RIGHT_BUTTON = 2;
 
+    /** Mouse movement flag, added to the currently pressed button code. */
+    public static final int MOUSE_BUTTON_MOVED = 32;
     /** Mouse moving while having left mouse button pressed. */
-    public static final int MOUSE_LEFT_BUTTON_MOVED = 32;
+    public static final int MOUSE_LEFT_BUTTON_MOVED = MOUSE_BUTTON_MOVED + MOUSE_LEFT_BUTTON;
     public static final int MOUSE_WHEELUP_BUTTON = 64;
     public static final int MOUSE_WHEELDOWN_BUTTON = 65;
 
@@ -556,7 +560,8 @@ public final class TerminalEmulator {
         if (row < 1) row = 1;
         if (row > mRows) row = mRows;
 
-        if (mouseButton == MOUSE_LEFT_BUTTON_MOVED && !isDecsetInternalBitSet(DECSET_BIT_MOUSE_TRACKING_BUTTON_EVENT)) {
+        if ((mouseButton & MOUSE_BUTTON_MOVED) == MOUSE_BUTTON_MOVED &&
+            !isDecsetInternalBitSet(DECSET_BIT_MOUSE_TRACKING_BUTTON_EVENT)) {
             // Do not send tracking.
         } else if (isDecsetInternalBitSet(DECSET_BIT_MOUSE_PROTOCOL_SGR)) {
             mSession.write(String.format("\033[<%d;%d;%d" + (pressed ? 'M' : 'm'), mouseButton, column, row));

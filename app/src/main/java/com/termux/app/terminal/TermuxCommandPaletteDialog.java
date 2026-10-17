@@ -32,6 +32,8 @@ public final class TermuxCommandPaletteDialog {
     public static final String ACTION_NEW_SESSION = "new_session";
     public static final String ACTION_SESSIONS = "sessions";
     public static final String ACTION_FILES = "files";
+    public static final String ACTION_WORKSPACES = "workspaces";
+    public static final String ACTION_DESKTOP = "desktop";
     public static final String ACTION_SETTINGS = "settings";
     public static final String ACTION_APPEARANCE = "appearance";
     public static final String ACTION_EXTRA_KEYS = "extra_keys";
@@ -155,7 +157,16 @@ public final class TermuxCommandPaletteDialog {
             allActions.add(new PaletteAction(ACTION_SESSIONS, R.string.premium_palette_sessions,
                 R.string.premium_palette_sessions_summary, "Tab", "switch tabs terminal"));
             allActions.add(new PaletteAction(ACTION_FILES, R.string.premium_palette_files,
-                R.string.premium_palette_files_summary, "Alt+F", "files folder browse explorer"));
+                R.string.premium_palette_files_summary,
+                TermuxLaptopMode.formatShortcut(activity, TermuxLaptopMode.ACTION_FILES), "files folder browse explorer"));
+            allActions.add(new PaletteAction(ACTION_WORKSPACES, R.string.premium_palette_workspaces,
+                R.string.premium_palette_workspaces_summary,
+                TermuxLaptopMode.formatShortcut(activity, TermuxLaptopMode.ACTION_WORKSPACES),
+                "workspace project profile sessions environment folder"));
+            allActions.add(new PaletteAction(ACTION_DESKTOP, R.string.premium_palette_desktop,
+                R.string.premium_palette_desktop_summary,
+                TermuxLaptopMode.formatShortcut(activity, TermuxLaptopMode.ACTION_GUIDE),
+                "laptop tablet desktop dex keyboard mouse shortcut input"));
             allActions.add(new PaletteAction(ACTION_SETTINGS, R.string.premium_palette_settings,
                 R.string.premium_palette_settings_summary, "", "preferences configure terminal"));
             allActions.add(new PaletteAction(ACTION_APPEARANCE, R.string.premium_palette_appearance,

@@ -43,8 +43,30 @@ grep -q '^/swapfile' /etc/fstab 2>/dev/null || echo '/swapfile none swap sw 0 0'
 log "Installing host build and ARM64 rootfs prerequisites..."
 sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  openjdk-21-jdk unzip wget curl python3 tar xz-utils \
+  openjdk-21-jdk unzip wget curl python3 tar xz-utils gnupg gpgv \
   debootstrap qemu-user-static binfmt-support
+
+# Debian hosts do not ship Ubuntu's archive keyring. Install the official
+# keyring only after checking Ubuntu's published archive-key fingerprints.
+UBUNTU_KEYRING=/usr/share/keyrings/ubuntu-archive-keyring.gpg
+KEYRING_TMP="$TMP_DIR/ubuntu-archive-keyring.gpg"
+KEYRING_VALID=0
+if [ -s "$UBUNTU_KEYRING" ]; then
+  KEYRING_FINGERPRINTS="$(gpg --batch --show-keys --with-colons "$UBUNTU_KEYRING" 2>/dev/null | awk -F: '$1 == "fpr" {print $10}')"
+  if grep -Fxq 790BC7277767219C42C86F933B4FE6ACC0B21F32 <<< "$KEYRING_FINGERPRINTS" &&
+     grep -Fxq F6ECB3762474EDA9D21B7022871920D1991BC93C <<< "$KEYRING_FINGERPRINTS"; then
+    KEYRING_VALID=1
+  fi
+fi
+if [ "$KEYRING_VALID" != 1 ]; then
+  log "Installing and fingerprint-checking the official Ubuntu archive keyring..."
+  curl -fsSL https://archive.ubuntu.com/ubuntu/project/ubuntu-archive-keyring.gpg -o "$KEYRING_TMP"
+  KEYRING_FINGERPRINTS="$(gpg --batch --show-keys --with-colons "$KEYRING_TMP" | awk -F: '$1 == "fpr" {print $10}')"
+  grep -Fxq 790BC7277767219C42C86F933B4FE6ACC0B21F32 <<< "$KEYRING_FINGERPRINTS"
+  grep -Fxq F6ECB3762474EDA9D21B7022871920D1991BC93C <<< "$KEYRING_FINGERPRINTS"
+  sudo install -D -m 0644 "$KEYRING_TMP" "$UBUNTU_KEYRING"
+fi
+rm -f "$KEYRING_TMP"
 sudo apt-get clean
 sudo rm -rf /var/lib/apt/lists/*
 
@@ -247,6 +269,7 @@ if [ "$ARCHIVE_HASH" != "$ASSET_HASH" ]; then
   fi
   mv -f "$ROOTFS_ASSET.tmp" "$ROOTFS_ASSET"
 fi
+bash "$PROJECT_DIR/rootfs/generate-rootfs-info.sh" "$ROOTFS_TARBALL"
 
 # Keep the archive and staged asset under /opt, but remove the unpacked tree to
 # free space for Gradle's asset merge and APK output. Set KEEP_UNPACKED_ROOTFS=1

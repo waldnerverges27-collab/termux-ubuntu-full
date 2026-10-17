@@ -565,6 +565,10 @@ public class TermuxTerminalViewClient extends TermuxTerminalViewClientBase {
         }
     }
 
+    public void refreshSoftKeyboardState() {
+        setSoftKeyboardState(false, false);
+    }
+
     public void setSoftKeyboardState(boolean isStartup, boolean isReloadTermuxProperties) {
         boolean noShowKeyboard = false;
 

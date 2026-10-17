@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.inputmethodservice.InputMethodService;
 import android.os.Build;
+import android.view.InputDevice;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -150,6 +151,16 @@ public class KeyboardUtils {
     public static boolean isHardKeyboardConnected(final Context context) {
         if (context == null) return false;
 
+        // Prefer an actual, non-virtual alphabetic input device when Android exposes one. This
+        // avoids classifying a software/virtual device as a laptop keyboard on desktop builds.
+        for (int deviceId : InputDevice.getDeviceIds()) {
+            InputDevice device = InputDevice.getDevice(deviceId);
+            if (device != null && !device.isVirtual() &&
+                device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC) return true;
+        }
+
+        // Preserve Android's configuration-based fallback for devices whose input devices are
+        // hidden from apps but which still advertise a hardware keyboard in Configuration.
         Configuration config = context.getResources().getConfiguration();
         return config.keyboard != Configuration.KEYBOARD_NOKEYS
             || config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;

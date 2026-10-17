@@ -50,6 +50,7 @@ import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -564,15 +565,31 @@ public final class TermuxService extends Service implements AppShell.AppShellCli
     @Nullable
     public TermuxSession createTermuxSession(String executablePath, String[] arguments, String stdin,
                                              String workingDirectory, boolean isFailSafe, String sessionName) {
+        return createTermuxSession(executablePath, arguments, stdin, workingDirectory, isFailSafe,
+            sessionName, null);
+    }
+
+    /** Create a terminal session with additional process environment variables. */
+    @Nullable
+    public TermuxSession createTermuxSession(String executablePath, String[] arguments, String stdin,
+                                             String workingDirectory, boolean isFailSafe, String sessionName,
+                                             @Nullable HashMap<String, String> additionalEnvironment) {
         ExecutionCommand executionCommand = new ExecutionCommand(TermuxShellManager.getNextShellId(),
             executablePath, arguments, stdin, workingDirectory, Runner.TERMINAL_SESSION.getName(), isFailSafe);
         executionCommand.shellName = sessionName;
-        return createTermuxSession(executionCommand);
+        return createTermuxSession(executionCommand, additionalEnvironment);
     }
 
     /** Create a {@link TermuxSession}. */
     @Nullable
     public synchronized TermuxSession createTermuxSession(ExecutionCommand executionCommand) {
+        return createTermuxSession(executionCommand, null);
+    }
+
+    /** Create a {@link TermuxSession} with optional, isolated process environment values. */
+    @Nullable
+    public synchronized TermuxSession createTermuxSession(ExecutionCommand executionCommand,
+                                                           @Nullable HashMap<String, String> additionalEnvironment) {
         if (executionCommand == null) return null;
 
         Logger.logDebug(LOG_TAG, "Creating \"" + executionCommand.getCommandIdAndLabelLogString() + "\" TermuxSession");
@@ -592,7 +609,7 @@ public final class TermuxService extends Service implements AppShell.AppShellCli
         // Otherwise if command was manually started by the user like by adding a new terminal session,
         // then no need to set stdout
         TermuxSession newTermuxSession = TermuxSession.execute(this, executionCommand, getTermuxTerminalSessionClient(),
-            this, new TermuxShellEnvironment(), null, executionCommand.isPluginExecutionCommand);
+            this, new TermuxShellEnvironment(), additionalEnvironment, executionCommand.isPluginExecutionCommand);
         if (newTermuxSession == null) {
             Logger.logError(LOG_TAG, "Failed to execute new TermuxSession command for:\n" + executionCommand.getCommandIdAndLabelLogString());
             // If the execution command was started for a plugin, then process the error

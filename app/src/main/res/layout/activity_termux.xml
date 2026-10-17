@@ -110,6 +110,31 @@
                 app:tint="@color/premium_text" />
 
             <ImageButton
+                android:id="@+id/premium_workspaces_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="2dp"
+                android:background="@drawable/premium_icon_button_background"
+                android:contentDescription="@string/premium_open_workspaces"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_terminal_workspaces"
+                app:tint="@color/premium_text" />
+
+            <ImageButton
+                android:id="@+id/premium_desktop_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="2dp"
+                android:background="@drawable/premium_icon_button_background"
+                android:contentDescription="@string/premium_desktop_button_description"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_terminal_desktop"
+                android:visibility="gone"
+                app:tint="@color/premium_text" />
+
+            <ImageButton
                 android:id="@+id/premium_settings_button"
                 android:layout_width="40dp"
                 android:layout_height="40dp"

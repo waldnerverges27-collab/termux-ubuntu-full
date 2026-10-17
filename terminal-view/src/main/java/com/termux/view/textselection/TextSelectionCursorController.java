@@ -106,6 +106,50 @@ public class TextSelectionCursorController implements CursorController {
             }
         }
     }
+
+    private int mMouseAnchorX;
+    private int mMouseAnchorY;
+
+    /** Begin a mouse-drag selection without expanding the initial position to a whole word. */
+    public void startMouseSelection(int column, int row) {
+        mMouseAnchorX = clampColumn(column);
+        mMouseAnchorY = clampRow(row);
+        mSelX1 = mSelX2 = mMouseAnchorX;
+        mSelY1 = mSelY2 = mMouseAnchorY;
+        mStartHandle.positionAtCursor(mSelX1, mSelY1, true);
+        mEndHandle.positionAtCursor(mSelX2 + 1, mSelY2, true);
+        setActionModeCallBacks();
+        mShowStartTime = System.currentTimeMillis();
+        mIsSelectingText = true;
+    }
+
+    /** Extend or contract the selection anchored at the initial mouse-down cell. */
+    public void updateMouseSelection(int column, int row) {
+        if (!mIsSelectingText) return;
+        int x = clampColumn(column);
+        int y = clampRow(row);
+        if (y < mMouseAnchorY || (y == mMouseAnchorY && x < mMouseAnchorX)) {
+            mSelX1 = x;
+            mSelY1 = y;
+            mSelX2 = mMouseAnchorX;
+            mSelY2 = mMouseAnchorY;
+        } else {
+            mSelX1 = mMouseAnchorX;
+            mSelY1 = mMouseAnchorY;
+            mSelX2 = x;
+            mSelY2 = y;
+        }
+        render();
+    }
+
+    private int clampColumn(int column) {
+        return Math.max(0, Math.min(terminalView.mEmulator.mColumns - 1, column));
+    }
+
+    private int clampRow(int row) {
+        int scrollRows = terminalView.mEmulator.getScreen().getActiveRows() - terminalView.mEmulator.mRows;
+        return Math.max(-scrollRows, Math.min(terminalView.mEmulator.mRows - 1, row));
+    }
     
     public void setActionModeCallBacks() {
         final ActionMode.Callback callback = new ActionMode.Callback() {

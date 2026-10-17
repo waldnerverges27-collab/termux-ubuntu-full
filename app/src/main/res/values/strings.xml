@@ -328,4 +328,108 @@
     <string name="premium_theme_amber">Amber</string>
     <string name="premium_theme_rose">Rose</string>
 
+    <!-- Ubuntu first-run setup and diagnostics -->
+    <string name="ubuntu_setup_title">Preparing Ubuntu</string>
+    <string name="ubuntu_setup_stage_checking">Checking device compatibility, permissions, and storage…</string>
+    <string name="ubuntu_setup_stage_copying">Copying Ubuntu into Termux storage…</string>
+    <string name="ubuntu_setup_detail_copying">Copying Ubuntu: %1$s (%2$d%%)</string>
+    <string name="ubuntu_setup_stage_extracting">Extracting Ubuntu (%1$s). This can take several minutes…</string>
+    <string name="ubuntu_setup_stage_verifying">Verifying Ubuntu and preparing its launcher…</string>
+    <string name="ubuntu_setup_space_title">More storage may be needed</string>
+    <string name="ubuntu_setup_space_message">The recommended free space is %1$s. Android reports %2$s available. The archive is %3$s and expands to about %4$s. You can free space and retry, continue anyway, or use the Termux shell for now.</string>
+    <string name="ubuntu_setup_continue_anyway">Continue anyway</string>
+    <string name="ubuntu_setup_open_termux">Open Termux temporarily</string>
+    <string name="ubuntu_setup_retry">Retry</string>
+    <string name="ubuntu_setup_error_title">Ubuntu could not be prepared</string>
+    <string name="ubuntu_setup_error_manifest">Ubuntu setup metadata is missing or invalid. Install a complete, current APK and try again.</string>
+    <string name="ubuntu_setup_error_arch">This Ubuntu image requires a 64-bit ARM device (arm64-v8a).</string>
+    <string name="ubuntu_setup_error_asset">This APK does not contain the Ubuntu ARM64 image. Install a complete build that includes ubuntu-rootfs.tar.xz, then retry.</string>
+    <string name="ubuntu_setup_error_integrity">The bundled Ubuntu image failed its integrity check. Reinstall the APK before trying again.</string>
+    <string name="ubuntu_setup_error_permission">Termux could not write or unpack Ubuntu in its private storage. Check available space and retry; reinstall the app only if the problem persists.</string>
+    <string name="ubuntu_setup_error_storage">There is not enough free app storage to finish extracting Ubuntu. Free space, then tap Retry.</string>
+    <string name="ubuntu_setup_error_invalid_rootfs">The extracted Ubuntu image is incomplete or is not a valid ARM64 root filesystem. The invalid extraction is removed, and any older rootfs is kept for recovery.</string>
+    <string name="ubuntu_setup_error_generic">Ubuntu could not be prepared because an extraction step failed. Copy diagnostics and retry, or use the Termux shell temporarily.</string>
+    <string name="ubuntu_setup_recovery_preserved">Incomplete data was kept at: %1$s</string>
+    <string name="ubuntu_setup_copy_diagnostics">Copy diagnostics</string>
+    <string name="ubuntu_setup_diagnostics_label">Ubuntu setup diagnostics</string>
+    <string name="ubuntu_setup_diagnostics_copied">Diagnostics copied</string>
+
+    <!-- Project workspaces and grouped terminal sessions -->
+    <string name="premium_open_workspaces">Open project workspaces</string>
+    <string name="premium_palette_workspaces">Project workspaces</string>
+    <string name="premium_palette_workspaces_summary">Create project profiles and open grouped Ubuntu sessions</string>
+    <string name="premium_workspaces_title">Workspaces</string>
+    <string name="premium_workspaces_summary">Create project profiles with an Ubuntu folder and environment variables. Sessions stay grouped by project.</string>
+    <string name="premium_workspace_create">New workspace</string>
+    <string name="premium_workspace_edit">Edit</string>
+    <string name="premium_workspace_delete">Delete</string>
+    <string name="premium_workspace_save">Save workspace</string>
+    <string name="premium_workspace_name">Project name</string>
+    <string name="premium_workspace_name_hint">e.g. Web API</string>
+    <string name="premium_workspace_directory">Ubuntu starting folder</string>
+    <string name="premium_workspace_directory_hint">/root/projects/api</string>
+    <string name="premium_workspace_environment">Environment variables</string>
+    <string name="premium_workspace_environment_hint">One KEY=VALUE per line, for example:\nNODE_ENV=development\nPORT=3000</string>
+    <string name="premium_workspace_details">%1$s · %2$d variables</string>
+    <string name="premium_workspace_new_session">New Ubuntu session</string>
+    <string name="premium_workspace_sessions_count">Sessions · %1$d</string>
+    <string name="premium_workspace_unassigned">Other sessions</string>
+    <string name="premium_workspace_no_sessions">No sessions in this workspace yet.</string>
+    <string name="premium_workspace_empty">No workspaces yet. Create a project profile to group its Ubuntu sessions.</string>
+    <string name="premium_workspace_running">Running</string>
+    <string name="premium_workspace_stopped">Stopped</string>
+    <string name="premium_workspace_switch_session">Switch to %1$s</string>
+    <string name="premium_workspace_service_unavailable">Terminal service is not ready yet.</string>
+    <string name="premium_workspace_ubuntu_required_title">Ubuntu is not ready</string>
+    <string name="premium_workspace_ubuntu_required_message">Finish Ubuntu setup before starting a workspace session. You can retry setup now or continue using a regular Termux shell.</string>
+    <string name="premium_workspace_delete_message">Remove the profile “%1$s”? Its %2$d current sessions will remain open and move to Other sessions.</string>
+    <string name="premium_workspace_error_name_required">Enter a project name.</string>
+    <string name="premium_workspace_error_name_too_long">Project names must be 64 characters or fewer.</string>
+    <string name="premium_workspace_error_duplicate">A workspace with that name already exists.</string>
+    <string name="premium_workspace_error_directory">Enter an absolute Ubuntu folder path, such as /root/projects/api.</string>
+    <string name="premium_workspace_error_environment">Environment entries must use unique KEY=VALUE lines with valid variable names. Control variables are reserved.</string>
+    <string name="premium_workspace_error_environment_size">Environment settings exceed the supported size or variable limit.</string>
+    <string name="premium_workspace_error_invalid">Check the workspace details and try again.</string>
+    <string name="premium_workspace_error_limit">You can create up to 32 workspaces.</string>
+
+    <string name="premium_workspace_session_name">%1$s · Session %2$d</string>
+    <string name="premium_workspace_error_environment_file">Termux could not safely save the private workspace environment variables. Check app storage and retry.</string>
+
+    <string name="premium_desktop_button_description">Laptop and tablet shortcuts</string>
+    <string name="premium_palette_desktop">Laptop &amp; tablet mode</string>
+    <string name="premium_palette_desktop_summary">Configure shortcuts, physical keyboard and mouse behavior</string>
+    <string name="desktop_title">Laptop &amp; tablet mode</string>
+    <string name="desktop_action_palette">Open command palette</string>
+    <string name="desktop_action_files">Browse files</string>
+    <string name="desktop_action_workspaces">Open workspaces</string>
+    <string name="desktop_action_new_session">Create a session</string>
+    <string name="desktop_action_previous_session">Previous session</string>
+    <string name="desktop_action_next_session">Next session</string>
+    <string name="desktop_action_guide">Open this guide</string>
+    <string name="desktop_input_status">Physical keyboard: %1$s · Pointer: %2$s · Window: %3$d dp (%4$s)</string>
+    <string name="desktop_connected">connected</string>
+    <string name="desktop_not_connected">not detected</string>
+    <string name="desktop_window_wide">wide</string>
+    <string name="desktop_window_compact">compact</string>
+    <string name="desktop_window_multiwindow">multi-window</string>
+    <string name="desktop_guide_title">Keyboard and mouse guide</string>
+    <string name="desktop_guide_text">Focus the terminal, then use the shortcuts below. You can change any shortcut, clear it, or restore the defaults. Some key combinations may be reserved by Android or your keyboard.\n\nMouse wheel scrolls terminal history, or sends wheel events to terminal apps using mouse tracking. Drag with the left button to select text; right-click opens the terminal context menu when mouse tracking is off; middle-click pastes clipboard text. In mouse-reporting apps, left, middle and right buttons are forwarded to the terminal.\n\nIn Samsung DeX or another resizable desktop window, resize the app freely: the terminal adjusts its columns and rows. Connect or disconnect a keyboard to update the Android keyboard policy.</string>
+    <string name="desktop_input_title">Keyboard and input</string>
+    <string name="desktop_soft_keyboard_enabled">Allow the Android on-screen keyboard</string>
+    <string name="desktop_keyboard_only_without_hardware">Show it only when no physical keyboard is connected</string>
+    <string name="desktop_keyboard_hint">The hardware-keyboard setting follows Android’s connected keyboard state and updates when the device configuration changes.</string>
+    <string name="desktop_shortcuts_title">Configurable shortcuts</string>
+    <string name="desktop_shortcuts_hint">Press a modifier and a key to assign a shortcut. Duplicate assignments are rejected.</string>
+    <string name="desktop_change_shortcut">Change shortcut for %1$s</string>
+    <string name="desktop_unassigned">Unassigned</string>
+    <string name="desktop_capture_title">Set shortcut for %1$s</string>
+    <string name="desktop_capture_hint">Press the desired key combination…</string>
+    <string name="desktop_capture_modifier_pressed">Modifier held. Now press the key to bind.</string>
+    <string name="desktop_capture_modifier_required">Use Ctrl, Alt, Shift or Meta with a key.</string>
+    <string name="desktop_capture_invalid">That key cannot be used for a shortcut. Try another combination.</string>
+    <string name="desktop_capture_conflict">Already assigned to %1$s (%2$s). Choose a different combination or clear that assignment first.</string>
+    <string name="desktop_unassign">Clear</string>
+    <string name="desktop_restore_defaults">Restore defaults</string>
+    <string name="desktop_defaults_restored">Default shortcuts restored.</string>
+
 </resources>

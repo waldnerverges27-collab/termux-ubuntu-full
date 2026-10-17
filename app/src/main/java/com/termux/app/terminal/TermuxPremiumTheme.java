@@ -50,6 +50,8 @@ public final class TermuxPremiumTheme {
         tint(activity, R.id.premium_new_session_button, palette.secondary);
         tint(activity, R.id.premium_command_palette_button, palette.secondary);
         tint(activity, R.id.premium_file_explorer_button, palette.secondary);
+        tint(activity, R.id.premium_workspaces_button, palette.secondary);
+        tint(activity, R.id.premium_desktop_button, palette.secondary);
         tint(activity, R.id.premium_settings_button, palette.secondary);
 
         ExtraKeysView extraKeysView = activity.getExtraKeysView();

@@ -55,6 +55,18 @@ public class TerminalTest extends TerminalTestCase {
 		assertEquals("\033[<0;3;4M", mOutput.getOutputAndClear());
 		mTerminal.sendMouseEvent(TerminalEmulator.MOUSE_LEFT_BUTTON, 3, 4, false);
 		assertEquals("\033[<0;3;4m", mOutput.getOutputAndClear());
+		mTerminal.sendMouseEvent(TerminalEmulator.MOUSE_MIDDLE_BUTTON, 3, 4, true);
+		assertEquals("\033[<1;3;4M", mOutput.getOutputAndClear());
+		mTerminal.sendMouseEvent(TerminalEmulator.MOUSE_RIGHT_BUTTON, 3, 4, true);
+		assertEquals("\033[<2;3;4M", mOutput.getOutputAndClear());
+
+		// Mouse motion is only reported in DECSET 1002 mode, not in press/release mode 1000.
+		mTerminal.sendMouseEvent(TerminalEmulator.MOUSE_BUTTON_MOVED + TerminalEmulator.MOUSE_RIGHT_BUTTON, 3, 4, true);
+		assertEquals("", mOutput.getOutputAndClear());
+		enterString("\033[?1000l");
+		enterString("\033[?1002h");
+		mTerminal.sendMouseEvent(TerminalEmulator.MOUSE_BUTTON_MOVED + TerminalEmulator.MOUSE_RIGHT_BUTTON, 3, 4, true);
+		assertEquals("\033[<34;3;4M", mOutput.getOutputAndClear());
 
 		// When the client says that a click is outside (which could happen when pixels are outside
 		// the terminal area, see https://github.com/termux/termux-app/issues/501) the terminal

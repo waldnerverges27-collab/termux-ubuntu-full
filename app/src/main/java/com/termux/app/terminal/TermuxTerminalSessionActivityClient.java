@@ -21,6 +21,7 @@ import com.termux.shared.interact.ShareUtils;
 import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
 import com.termux.shared.termux.interact.TextInputDialogUtils;
 import com.termux.app.TermuxActivity;
+import com.termux.app.UbuntuRootfsInstaller;
 import com.termux.shared.termux.terminal.TermuxTerminalSessionClientBase;
 import com.termux.shared.termux.TermuxConstants;
 import com.termux.app.TermuxService;
@@ -34,6 +35,7 @@ import com.termux.terminal.TextStyle;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -389,6 +391,67 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
         }
     }
 
+    /** Start a native Ubuntu login session using one saved project profile. */
+    public void addWorkspaceSession(TermuxWorkspaceManager.Workspace workspace) {
+        TermuxService service = mActivity.getTermuxService();
+        if (service == null || workspace == null) return;
+        if (service.getTermuxSessionsSize() >= MAX_SESSIONS) {
+            new AlertDialog.Builder(mActivity).setTitle(R.string.title_max_terminals_reached)
+                .setMessage(R.string.msg_max_terminals_reached)
+                .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        if (!UbuntuRootfsInstaller.isReady()) {
+            new AlertDialog.Builder(mActivity)
+                .setTitle(R.string.premium_workspace_ubuntu_required_title)
+                .setMessage(R.string.premium_workspace_ubuntu_required_message)
+                .setPositiveButton(R.string.ubuntu_setup_retry,
+                    (dialog, which) -> UbuntuRootfsInstaller.installIfNeeded(mActivity, () -> { }))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+            return;
+        }
+
+        TermuxWorkspaceManager manager = new TermuxWorkspaceManager(mActivity);
+        TermuxWorkspaceManager.PreparedSession preparedSession;
+        try {
+            preparedSession = manager.prepareSession(workspace);
+        } catch (IOException e) {
+            Logger.logErrorExtended(LOG_TAG, "Could not prepare private workspace environment file:\\n" + e);
+            new AlertDialog.Builder(mActivity)
+                .setTitle(R.string.premium_workspace_ubuntu_required_title)
+                .setMessage(R.string.premium_workspace_error_environment_file)
+                .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+
+        String sessionName = mActivity.getString(R.string.premium_workspace_session_name,
+            workspace.name, service.getTermuxSessionsSize() + 1);
+        TermuxSession termuxSession;
+        try {
+            termuxSession = service.createTermuxSession(
+                UbuntuRootfsInstaller.getLoginScriptPath(), null, null, TermuxConstants.TERMUX_HOME_DIR_PATH,
+                false, sessionName, preparedSession.additionalEnvironment);
+        } catch (RuntimeException e) {
+            manager.discardPreparedSession(preparedSession);
+            Logger.logErrorExtended(LOG_TAG, "Could not start Ubuntu workspace session: " + e);
+            new AlertDialog.Builder(mActivity)
+                .setTitle(R.string.premium_workspace_ubuntu_required_title)
+                .setMessage(R.string.premium_workspace_error_invalid)
+                .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        if (termuxSession == null || termuxSession.getTerminalSession() == null) {
+            manager.discardPreparedSession(preparedSession);
+            return;
+        }
+
+        manager.attachSession(termuxSession.getTerminalSession().mHandle, preparedSession);
+        setCurrentSession(termuxSession.getTerminalSession());
+        mActivity.termuxSessionListNotifyUpdated();
+        mActivity.getDrawer().closeDrawers();
+    }
+
     public void setCurrentStoredSession() {
         TerminalSession currentSession = mActivity.getCurrentSession();
         if (currentSession != null)
@@ -436,6 +499,7 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
         TermuxService service = mActivity.getTermuxService();
         if (service == null) return;
 
+        new TermuxWorkspaceManager(mActivity).removeSession(finishedSession.mHandle);
         int index = service.removeTermuxSession(finishedSession);
 
         int size = service.getTermuxSessionsSize();

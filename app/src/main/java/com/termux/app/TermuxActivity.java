@@ -9,8 +9,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.Configuration;
+import android.hardware.input.InputManager;
 import android.net.Uri;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.ContextMenu;
@@ -53,6 +56,10 @@ import com.termux.app.terminal.TermuxTerminalViewClient;
 import com.termux.app.terminal.TermuxCommandPaletteDialog;
 import com.termux.app.terminal.TermuxFileExplorerDialog;
 import com.termux.app.terminal.TermuxPremiumTheme;
+import com.termux.app.terminal.TermuxLaptopMode;
+import com.termux.app.terminal.TermuxLaptopModeDialog;
+import com.termux.app.terminal.TermuxWorkspaceDialog;
+import com.termux.app.terminal.TermuxWorkspaceManager;
 import com.termux.shared.termux.extrakeys.ExtraKeysView;
 import com.termux.shared.termux.interact.TextInputDialogUtils;
 import com.termux.shared.logger.Logger;
@@ -60,6 +67,7 @@ import com.termux.shared.termux.TermuxUtils;
 import com.termux.shared.termux.settings.properties.TermuxAppSharedProperties;
 import com.termux.shared.termux.theme.TermuxThemeUtils;
 import com.termux.shared.theme.NightMode;
+import com.termux.shared.view.KeyboardUtils;
 import com.termux.shared.view.ViewUtils;
 import com.termux.terminal.TerminalSession;
 import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
@@ -75,6 +83,8 @@ import androidx.core.content.ContextCompat;
 import androidx.viewpager.widget.ViewPager;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A terminal emulator activity.
@@ -186,6 +196,27 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     /** Subtitle and quick session tabs in the premium terminal app bar. */
     private TextView mPremiumSessionSubtitle;
+    private int mLastKeyboardConfiguration = Configuration.KEYBOARD_NOKEYS;
+    private int mLastHardKeyboardHidden = Configuration.HARDKEYBOARDHIDDEN_UNDEFINED;
+    private boolean mLastHardwareKeyboardConnected;
+    private InputManager mInputManager;
+    private boolean mInputDeviceListenerRegistered;
+    private final InputManager.InputDeviceListener mInputDeviceListener = new InputManager.InputDeviceListener() {
+        @Override
+        public void onInputDeviceAdded(int deviceId) {
+            refreshHardwareKeyboardState();
+        }
+
+        @Override
+        public void onInputDeviceRemoved(int deviceId) {
+            refreshHardwareKeyboardState();
+        }
+
+        @Override
+        public void onInputDeviceChanged(int deviceId) {
+            refreshHardwareKeyboardState();
+        }
+    };
 
 
     private static final int CONTEXT_MENU_SELECT_URL_ID = 0;
@@ -224,6 +255,9 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         setActivityTheme();
 
         super.onCreate(savedInstanceState);
+        Configuration initialConfiguration = getResources().getConfiguration();
+        mLastKeyboardConfiguration = initialConfiguration.keyboard;
+        mLastHardKeyboardHidden = initialConfiguration.hardKeyboardHidden;
 
         setContentView(R.layout.activity_termux);
 
@@ -235,6 +269,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             mIsInvalidState = true;
             return;
         }
+        mLastHardwareKeyboardConnected = KeyboardUtils.isHardKeyboardConnected(this);
 
         setMargins();
 
@@ -295,6 +330,55 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     }
 
     @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        boolean hardwareKeyboardChanged = newConfig.keyboard != mLastKeyboardConfiguration ||
+            newConfig.hardKeyboardHidden != mLastHardKeyboardHidden;
+        mLastKeyboardConfiguration = newConfig.keyboard;
+        mLastHardKeyboardHidden = newConfig.hardKeyboardHidden;
+        boolean hardwareKeyboardConnected = KeyboardUtils.isHardKeyboardConnected(this);
+        hardwareKeyboardChanged |= hardwareKeyboardConnected != mLastHardwareKeyboardConnected;
+        mLastHardwareKeyboardConnected = hardwareKeyboardConnected;
+        updateDesktopModeButtonVisibility();
+        if (hardwareKeyboardChanged && mPreferences != null &&
+            mPreferences.isSoftKeyboardEnabledOnlyIfNoHardware() && mTermuxTerminalViewClient != null) {
+            mTermuxTerminalViewClient.refreshSoftKeyboardState();
+        }
+    }
+
+    @Override
+    public void onMultiWindowModeChanged(boolean isInMultiWindowMode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) super.onMultiWindowModeChanged(isInMultiWindowMode);
+        updateDesktopModeButtonVisibility();
+    }
+
+    private void registerInputDeviceListener() {
+        if (mInputManager == null)
+            mInputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
+        if (mInputManager == null || mInputDeviceListenerRegistered) return;
+        mInputManager.registerInputDeviceListener(mInputDeviceListener, null);
+        mInputDeviceListenerRegistered = true;
+        refreshHardwareKeyboardState();
+    }
+
+    private void unregisterInputDeviceListener() {
+        if (mInputManager != null && mInputDeviceListenerRegistered) {
+            mInputManager.unregisterInputDeviceListener(mInputDeviceListener);
+            mInputDeviceListenerRegistered = false;
+        }
+    }
+
+    private void refreshHardwareKeyboardState() {
+        boolean connected = KeyboardUtils.isHardKeyboardConnected(this);
+        if (connected == mLastHardwareKeyboardConnected) return;
+        mLastHardwareKeyboardConnected = connected;
+        if (mPreferences != null && mPreferences.isSoftKeyboardEnabledOnlyIfNoHardware() &&
+            mTermuxTerminalViewClient != null && mIsVisible) {
+            mTermuxTerminalViewClient.refreshSoftKeyboardState();
+        }
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
 
@@ -303,6 +387,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         if (mIsInvalidState) return;
 
         mIsVisible = true;
+        registerInputDeviceListener();
 
         if (mTermuxTerminalSessionActivityClient != null)
             mTermuxTerminalSessionActivityClient.onStart();
@@ -346,6 +431,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         if (mIsInvalidState) return;
 
         mIsVisible = false;
+        unregisterInputDeviceListener();
 
         if (mTermuxTerminalSessionActivityClient != null)
             mTermuxTerminalSessionActivityClient.onStop();
@@ -405,6 +491,15 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         mTermuxService = ((TermuxService.LocalBinder) service).service;
 
         setTermuxSessionsListView();
+        Set<String> liveSessionHandles = new HashSet<>();
+        for (int index = 0; index < mTermuxService.getTermuxSessionsSize(); index++) {
+            TermuxSession session = mTermuxService.getTermuxSession(index);
+            if (session != null && session.getTerminalSession() != null)
+                liveSessionHandles.add(session.getTerminalSession().mHandle);
+        }
+        new TermuxWorkspaceManager(this).pruneSessions(liveSessionHandles);
+        if (mTermuxSessionListViewController != null)
+            mTermuxSessionListViewController.notifyWorkspaceBindingsUpdated();
 
         final Intent intent = getIntent();
         setIntent(null);
@@ -654,7 +749,18 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     private void setPremiumControlViews() {
         findViewById(R.id.premium_sessions_button).setOnClickListener(v -> getDrawer().openDrawer(Gravity.LEFT));
         findViewById(R.id.premium_command_palette_button).setOnClickListener(v -> showCommandPalette());
+        findViewById(R.id.premium_workspaces_button).setOnClickListener(v -> TermuxWorkspaceDialog.show(this));
         findViewById(R.id.premium_file_explorer_button).setOnClickListener(v -> TermuxFileExplorerDialog.show(this));
+        findViewById(R.id.premium_desktop_button).setOnClickListener(v -> TermuxLaptopModeDialog.show(this));
+        updateDesktopModeButtonVisibility();
+    }
+
+    private void updateDesktopModeButtonVisibility() {
+        View button = findViewById(R.id.premium_desktop_button);
+        if (button == null) return;
+        float density = getResources().getDisplayMetrics().density;
+        int widthDp = Math.round(getResources().getDisplayMetrics().widthPixels / Math.max(0.1f, density));
+        button.setVisibility(widthDp >= 600 ? View.VISIBLE : View.GONE);
     }
 
     private void setToggleKeyboardView() {
@@ -685,6 +791,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             getDrawer().openDrawer(Gravity.LEFT);
         } else if (TermuxCommandPaletteDialog.ACTION_FILES.equals(actionId)) {
             TermuxFileExplorerDialog.show(this);
+        } else if (TermuxCommandPaletteDialog.ACTION_WORKSPACES.equals(actionId)) {
+            TermuxWorkspaceDialog.show(this);
+        } else if (TermuxCommandPaletteDialog.ACTION_DESKTOP.equals(actionId)) {
+            TermuxLaptopModeDialog.show(this);
         } else if (TermuxCommandPaletteDialog.ACTION_SETTINGS.equals(actionId)) {
             ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
         } else if (TermuxCommandPaletteDialog.ACTION_APPEARANCE.equals(actionId)) {
@@ -722,6 +832,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         tabScroller.setVisibility(View.VISIBLE);
         TerminalSession activeSession = getCurrentSession();
         int sessionCount = mTermuxService.getTermuxSessionsSize();
+        TermuxWorkspaceManager workspaceManager = new TermuxWorkspaceManager(this);
         for (int index = 0; index < sessionCount; index++) {
             TermuxSession termuxSession = mTermuxService.getTermuxSession(index);
             if (termuxSession == null || termuxSession.getTerminalSession() == null) continue;
@@ -730,6 +841,9 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             String label = session.mSessionName;
             if (label == null || label.trim().isEmpty()) label = session.getTitle();
             if (label == null || label.trim().isEmpty()) label = getString(R.string.premium_session_default_name, index + 1);
+            TermuxWorkspaceManager.Workspace workspace = workspaceManager.getWorkspaceForSession(session.mHandle);
+            String workspaceName = workspace == null ? null : workspace.name;
+            String tabLabel = workspaceName == null ? label : workspaceName + " · " + label;
 
             LinearLayout tab = new LinearLayout(this);
             tab.setOrientation(LinearLayout.HORIZONTAL);
@@ -740,7 +854,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             tab.setClickable(true);
             tab.setFocusable(true);
             tab.setSelected(isActive);
-            tab.setContentDescription(getString(R.string.premium_session_switch, label));
+            tab.setContentDescription(getString(R.string.premium_session_switch, tabLabel));
 
             View statusDot = new View(this);
             GradientDrawable dot = new GradientDrawable();
@@ -753,7 +867,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             tab.addView(statusDot, dotParams);
 
             TextView title = new TextView(this);
-            title.setText(label);
+            title.setText(tabLabel);
             title.setTextColor(ContextCompat.getColor(this, isActive ? R.color.premium_text : R.color.premium_muted));
             title.setTextSize(11);
             title.setSingleLine(true);
@@ -775,6 +889,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                     if (subtitle == null || subtitle.trim().isEmpty()) subtitle = session.getTitle();
                     if (subtitle == null || subtitle.trim().isEmpty()) subtitle = getString(R.string.premium_session_subtitle);
                     if (!session.isRunning()) subtitle = getString(R.string.premium_session_stopped);
+                    if (workspaceName != null) subtitle = workspaceName + " · " + subtitle;
                     mPremiumSessionSubtitle.setText(subtitle);
                 }
             }
@@ -787,16 +902,33 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     @Override
     public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-            if (event.getKeyCode() == KeyEvent.KEYCODE_P && event.isCtrlPressed() && event.isShiftPressed()) {
-                showCommandPalette();
-                return true;
-            }
-            // Keep the Alt+F shortcut advertised by the command palette functional.
-            if (event.getKeyCode() == KeyEvent.KEYCODE_F && event.isAltPressed()
-                && !event.isCtrlPressed() && !event.isShiftPressed()) {
-                TermuxFileExplorerDialog.show(this);
-                return true;
+        String shortcutAction = TermuxLaptopMode.findMatchingAction(this, event);
+        if (shortcutAction != null) {
+            switch (shortcutAction) {
+                case TermuxLaptopMode.ACTION_PALETTE:
+                    showCommandPalette();
+                    return true;
+                case TermuxLaptopMode.ACTION_FILES:
+                    TermuxFileExplorerDialog.show(this);
+                    return true;
+                case TermuxLaptopMode.ACTION_WORKSPACES:
+                    TermuxWorkspaceDialog.show(this);
+                    return true;
+                case TermuxLaptopMode.ACTION_NEW_SESSION:
+                    if (mTermuxTerminalSessionActivityClient != null)
+                        mTermuxTerminalSessionActivityClient.addNewSession(false, null);
+                    return true;
+                case TermuxLaptopMode.ACTION_PREVIOUS_SESSION:
+                    if (mTermuxTerminalSessionActivityClient != null)
+                        mTermuxTerminalSessionActivityClient.switchToSession(false);
+                    return true;
+                case TermuxLaptopMode.ACTION_NEXT_SESSION:
+                    if (mTermuxTerminalSessionActivityClient != null)
+                        mTermuxTerminalSessionActivityClient.switchToSession(true);
+                    return true;
+                case TermuxLaptopMode.ACTION_GUIDE:
+                    TermuxLaptopModeDialog.show(this);
+                    return true;
             }
         }
         return super.dispatchKeyEvent(event);
@@ -1060,7 +1192,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
     public void termuxSessionListNotifyUpdated() {
-        if (mTermuxSessionListViewController != null) mTermuxSessionListViewController.notifyDataSetChanged();
+        if (mTermuxSessionListViewController != null)
+            mTermuxSessionListViewController.notifyWorkspaceBindingsUpdated();
         refreshPremiumSessionTabs();
     }
 
