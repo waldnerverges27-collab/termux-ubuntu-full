@@ -22,11 +22,20 @@ import tempfile
 archive_path, output_path = sys.argv[1:]
 marker_data = None
 expanded_bytes = 0
+hardlink_count = 0
+special_entries = []
+dev_directory_present = False
 try:
     with tarfile.open(archive_path, mode='r:xz') as archive:
         for member in archive:
             if member.isfile():
                 expanded_bytes += member.size
+            if member.islnk():
+                hardlink_count += 1
+            if member.isdev() or member.isfifo():
+                special_entries.append(member.name)
+            if member.isdir() and member.name.rstrip('/') in ('ubuntu-rootfs/dev', 'dev'):
+                dev_directory_present = True
             if member.name.endswith('/etc/termux-ubuntu-rootfs') or member.name == 'etc/termux-ubuntu-rootfs':
                 stream = archive.extractfile(member)
                 marker_data = stream.read(4096).decode('utf-8', 'replace') if stream else None
@@ -37,6 +46,12 @@ if not marker_data or 'ARCH=arm64' not in marker_data.splitlines():
     raise SystemExit('Archive is missing its ARM64 Ubuntu marker.')
 if expanded_bytes <= 0:
     raise SystemExit('Archive contains no regular files.')
+if hardlink_count:
+    raise SystemExit(f'Archive contains {hardlink_count} hard links; run normalize-rootfs-for-android.py before packaging.')
+if special_entries:
+    raise SystemExit('Archive contains special nodes that Android cannot extract: ' + ', '.join(special_entries[:8]))
+if not dev_directory_present:
+    raise SystemExit('Archive is missing ubuntu-rootfs/dev, required by the Termux /dev bind mount.')
 
 hasher = hashlib.sha256()
 with open(archive_path, 'rb') as stream:

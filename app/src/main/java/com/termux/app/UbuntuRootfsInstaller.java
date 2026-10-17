@@ -314,7 +314,8 @@ public final class UbuntuRootfsInstaller {
         ByteArrayOutputStream outputTail = new ByteArrayOutputStream();
         try {
             ProcessBuilder builder = new ProcessBuilder(
-                TERMUX_BIN + "/tar", "-xJf", tarball.getAbsolutePath(), "-C", rootfsParent.getAbsolutePath());
+                TERMUX_BIN + "/tar", "--no-same-owner", "-xJf", tarball.getAbsolutePath(),
+                "-C", rootfsParent.getAbsolutePath());
             builder.redirectErrorStream(true);
             builder.environment().put("LD_LIBRARY_PATH", TERMUX_LIB);
             builder.environment().put("PATH", TERMUX_BIN + ":/system/bin");

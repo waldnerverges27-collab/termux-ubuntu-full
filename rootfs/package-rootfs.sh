@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 ROOTFS="${ROOTFS:-/opt/ubuntu-rootfs}"
 TARBALL="${TARBALL:-/opt/ubuntu-rootfs.tar.xz}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 if [[ "$ROOTFS" != /opt/ubuntu-rootfs || "$TARBALL" != /opt/ubuntu-rootfs.tar.xz ]]; then
   echo "Refusing unexpected rootfs or archive path." >&2
   exit 1
@@ -46,6 +47,9 @@ fi
 
 # Remove the host-only emulator after validation so it is never bundled.
 sudo rm -f "$ROOTFS/usr/bin/qemu-aarch64-static"
+# The APK extracts as an unprivileged Android app: normalize hard links and
+# discard /dev device nodes before creating the archive.
+sudo python3 "$SCRIPT_DIR/normalize-rootfs-for-android.py" "$ROOTFS"
 sudo rm -f "$TARBALL.tmp"
 sudo env XZ_OPT='-1 -T0' tar --numeric-owner --xattrs --acls \
   -cJf "$TARBALL.tmp" -C /opt ubuntu-rootfs
